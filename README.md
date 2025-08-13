@@ -15,10 +15,49 @@ ML Assistant CLI is a developer-first command-line tool that unifies the entire 
 
 ## 🚀 Quick Start
 
-### Installation
+### Installation Options
+
+#### Option 1: PyPI (Recommended)
 
 ```bash
-pip install mlcli
+# Install from PyPI
+pip install ml-assistant-cli
+
+# Or install with cloud support
+pip install ml-assistant-cli[cloud]
+
+# Verify installation
+mlcli --help
+```
+
+#### Option 2: Docker (No Installation Required)
+
+```bash
+# Run directly with Docker
+docker run -it --rm -v $(pwd):/home/mlcli/workspace santhoshkumar0918/ml-assistant-cli:latest
+
+# Or create convenient alias
+alias mlcli="docker run -it --rm -v $(pwd):/home/mlcli/workspace santhoshkumar0918/ml-assistant-cli:latest"
+
+# Then use normally
+mlcli --help
+```
+
+#### Option 3: pipx (Isolated Installation)
+
+```bash
+# Install with pipx for isolated environment
+pipx install ml-assistant-cli
+mlcli --help
+```
+
+#### Option 4: From Source
+
+```bash
+# Clone and install
+git clone https://github.com/mlcli/mlcli.git
+cd mlcli
+pip install -e .
 ```
 
 ### Initialize a new ML project

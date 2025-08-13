@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "mlcli"
+name = "ml-assistant-cli"
 dynamic = ["version"]
 description = "End-to-end ML workflow CLI - from dataset to deployed API"
 readme = "README.md"
@@ -34,6 +34,8 @@ dependencies = [
     "xgboost>=1.7.0",
     "bentoml>=1.2.0",
     "pyyaml>=6.0",
+    "matplotlib>=3.5.0",
+    "seaborn>=0.11.0",
     "click>=8.0.0",
     "httpx>=0.24.0",
     "pathlib-mate>=1.0.0",
