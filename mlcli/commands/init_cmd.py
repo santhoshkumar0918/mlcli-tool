@@ -22,6 +22,7 @@ def main(
     ctx: typer.Context,
     name: Optional[str] = typer.Option(None, "--name", "-n", help="Project name"),
     description: Optional[str] = typer.Option(None, "--description", "-d", help="Project description"),
+    plugin: str = typer.Option("tabular", "--plugin", "-p", help="Project template (tabular, chatbot)"),
     force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing configuration"),
 ) -> None:
     """Initialize a new ML project with configuration and directory structure."""
@@ -34,6 +35,19 @@ def main(
         if not Confirm.ask(f"Project configuration already exists at {config_file}. Overwrite?"):
             console.print("[yellow]Initialization cancelled.[/yellow]")
             raise typer.Exit(0)
+    
+    # Get plugin from registry
+    from mlcli.plugins.registry import PluginRegistry
+    try:
+        registry = PluginRegistry()
+        selected_plugin = registry.get(plugin)
+        console.print(f"[cyan]Using plugin:[/cyan] {selected_plugin.description}")
+    except Exception as e:
+        console.print(f"[red]Error loading plugin '{plugin}':[/red] {e}")
+        available = registry.list_available() if 'registry' in locals() else []
+        if available:
+            console.print(f"[yellow]Available plugins:[/yellow] {', '.join(available)}")
+        raise typer.Exit(1)
     
     # Interactive project setup
     if not name:
@@ -50,27 +64,37 @@ def main(
             show_default=False
         )
     
-    # Create project structure
+    # Create project structure using plugin
     try:
-        _create_project_structure(project_dir)
+        selected_plugin.create_project(project_dir, name)
         
-        # Create configuration
-        config = MLCLIConfig(
-            project_name=name,
-            description=description or None
-        )
+        # Create configuration with plugin-specific template
+        config_dict = {
+            "project_name": name,
+            "description": description or None,
+            "version": "0.1.0",
+        }
+        # Merge plugin-specific config
+        config_dict.update(selected_plugin.get_config_template())
         
+        config = MLCLIConfig(**config_dict)
         save_config(config, config_file)
         
-        console.print(f"[green]✓[/green] Initialized ML project: [bold]{name}[/bold]")
+        console.print(f"[green]✓[/green] Initialized [bold]{plugin}[/bold] project: [bold]{name}[/bold]")
         console.print(f"[green]✓[/green] Configuration saved to: {config_file}")
         console.print(f"[green]✓[/green] Project structure created in: {project_dir}")
         
-        # Show next steps
-        console.print("\n[bold]Next steps:[/bold]")
-        console.print("1. Add your dataset to the [cyan]data/raw/[/cyan] directory")
-        console.print("2. Run [cyan]mlcli preprocess --input data/raw/your_data.csv[/cyan]")
-        console.print("3. Run [cyan]mlcli train[/cyan] to start training models")
+        # Show next steps (plugin-aware)
+        if plugin == "chatbot":
+            console.print("\n[bold]Next steps:[/bold]")
+            console.print("1. Copy [cyan].env.example[/cyan] to [cyan].env[/cyan] and add your OPENAI_API_KEY")
+            console.print("2. Add documents to [cyan]data/knowledge_base/[/cyan]")
+            console.print("3. Run [cyan]python src/app.py[/cyan] to start the chatbot")
+        else:
+            console.print("\n[bold]Next steps:[/bold]")
+            console.print("1. Add your dataset to the [cyan]data/raw/[/cyan] directory")
+            console.print("2. Run [cyan]mlcli preprocess --input data/raw/your_data.csv[/cyan]")
+            console.print("3. Run [cyan]mlcli train[/cyan] to start training models")
         
     except Exception as e:
         raise ConfigurationError(f"Failed to initialize project: {e}")
