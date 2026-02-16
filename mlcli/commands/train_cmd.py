@@ -19,7 +19,7 @@ console = Console()
 app = typer.Typer()
 
 
-@app.command()
+@app.callback(invoke_without_command=True)
 def main(
     ctx: typer.Context,
     train_data: Optional[Path] = typer.Option(None, "--train-data", "-t", help="Training data file path"),

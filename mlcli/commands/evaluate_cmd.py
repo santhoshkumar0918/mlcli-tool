@@ -28,7 +28,7 @@ console = Console()
 app = typer.Typer()
 
 
-@app.command()
+@app.callback(invoke_without_command=True)
 def main(
     ctx: typer.Context,
     test_data: Optional[Path] = typer.Option(None, "--test-data", "-t", help="Test data file path"),

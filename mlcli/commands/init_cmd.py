@@ -17,7 +17,7 @@ console = Console()
 app = typer.Typer()
 
 
-@app.command()
+@app.callback(invoke_without_command=True)
 def main(
     ctx: typer.Context,
     name: Optional[str] = typer.Option(None, "--name", "-n", help="Project name"),

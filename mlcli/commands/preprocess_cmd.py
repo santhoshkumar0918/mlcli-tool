@@ -17,7 +17,7 @@ console = Console()
 app = typer.Typer()
 
 
-@app.command()
+@app.callback(invoke_without_command=True)
 def main(
     ctx: typer.Context,
     input_file: Path = typer.Option(..., "--input", "-i", help="Input data file path"),

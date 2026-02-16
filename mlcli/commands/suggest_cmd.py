@@ -20,7 +20,7 @@ console = Console()
 app = typer.Typer()
 
 
-@app.command()
+@app.callback(invoke_without_command=True)
 def main(
     ctx: typer.Context,
     data_profile: Optional[Path] = typer.Option(None, "--data-profile", help="Data profile JSON file"),
