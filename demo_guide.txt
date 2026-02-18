@@ -1,0 +1,187 @@
+# MLCLI: Technical Demo & Onboarding Guide
+
+Welcome to the **ML Assistant CLI** project! This guide is designed to help you and your teammates run a full end-to-end demo and understand the core workflow of our framework.
+
+---
+
+## Step 0: Initial Installation
+
+For new teammates who have just cloned the repository:
+
+```bash
+# Clone the repository (if not already done)
+git clone https://github.com/santhoshkumar0918/mlcli-tool.git
+cd mlcli-tool
+
+# Create and activate a virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install core dependencies
+pip install -e .
+```
+
+---
+
+## Step 1: Environment Activation
+
+Before running any commands, ensure your virtual environment is active.
+
+```bash
+# Navigate to the tool directory
+cd /path/to/mlcli-tool
+
+# Activate the environment
+source .venv/bin/activate
+```
+
+---
+
+## Step 2: Project Initialization
+
+We use a Plugin-Based system to scaffold different project types.
+
+### Option A: Traditional Tabular ML
+```bash
+# Initialize a new project in a directory
+mlcli --project-dir my_tabular_project init --name "Churn Prediction" --plugin tabular
+```
+
+### Option B: Chatbot (LLM/RAG)
+```bash
+mlcli --project-dir my_chatbot init --name "KnowledgeBot" --plugin chatbot
+```
+
+### Terminal Simulation: mlcli init
+[cyan]Using plugin:[/cyan] LangChain-based chatbot with RAG (Retrieval-Augmented Generation)
+
+[green]✓[/green] Initialized [bold]chatbot[/bold] project: [bold]KnowledgeBot[/bold]
+[green]✓[/green] Configuration saved to: my_chatbot/mlcli.yaml
+[green]✓[/green] Project structure created in: my_chatbot
+
+Next steps:
+1. Copy .env.example to .env and add your OPENAI_API_KEY
+2. Add documents to data/knowledge_base/
+3. Run python src/app.py to start the chatbot
+
+---
+
+## Step 3: The Tabular ML Workflow
+
+If you initialized my_tabular_project, run the following flow:
+
+```bash
+cd my_tabular_project
+```
+
+### 1. Data Preprocessing
+Cleans your dataset, handles missing values, and generates a data profile.
+```bash
+# Add a sample.csv to data/raw/ first
+mlcli preprocess --input data/raw/sample.csv --target label
+```
+
+### 2. Model Training
+Trains baseline models (logistic regression, random forest) and saves the best one.
+```bash
+mlcli train
+```
+
+### Terminal Simulation: mlcli train
+[19:40:19] INFO     Training random_forest...                                                                                     
+[19:40:37] INFO     Training complete. Best model: logistic_regression (score: 0.5667)                                            
+⠧ Training complete!
+                   Model Training Results                    
+┏━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┓
+┃ Model                  ┃ CV Score ┃ Val Score ┃ Status    ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━┩
+│ logistic_regression *  │ 0.5667   │ 0.5000    │ ✓ Success │
+│ random_forest          │ 0.5667   │ 0.5000    │ ✓ Success │
+└────────────────────────┴──────────┴───────────┴───────────┘
+
+Training Summary:
+• Task Type: Classification
+• Models Trained: 2
+• Best Model: logistic_regression
+• Best Score: 0.5667
+
+### 3. Evaluation
+Generates a detailed performance report with metrics.
+```bash
+mlcli evaluate
+```
+
+### Terminal Simulation: mlcli evaluate
+         Model Performance Metrics          
+┏━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
+┃ Metric    ┃ Value  ┃ Interpretation      ┃
+┡━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
+│ Accuracy  │ 0.5000 │ Poor                │
+│ Precision │ 0.2500 │ Low precision       │
+│ Recall    │ 0.5000 │ Low recall          │
+│ F1 Score  │ 0.3333 │ Poor balance        │
+└───────────┴────────┴─────────────────────┘
+[19:41:46] INFO     Evaluation report saved to: reports/evaluation_report.json
+
+### 4. AI-Powered Suggestions
+Analyses your results and gives you technical advice on how to improve.
+```bash
+mlcli suggest
+```
+
+### Terminal Simulation: mlcli suggest
+Top Priority Actions
+1. Data Size High
+Issue: Small dataset (20 samples)                                                                                              
+Suggestion: Consider collecting more data or using data augmentation techniques                                                
+
+2. Model Performance High
+Issue: Low classification performance (0.567)                                                                                  
+Suggestion: Try advanced algorithms (XGBoost, Neural Networks) or ensemble methods                                             
+
+### 5. Prediction (Inference)
+Run your trained model on new, unseen data.
+```bash
+mlcli predict --input data/raw/sample.csv
+```
+
+### Terminal Simulation: mlcli predict
+Loading model from: models/best_model.pkl
+Loading data preprocessing pipeline...
+[19:51:01] INFO     Preprocessor loaded from: data/processed/preprocessor.pkl                     
+[19:51:01] INFO     Feature names loaded from: data/processed/feature_names.json                  
+
+Prediction Summary
+┏━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃ Row       ┃ Prediction ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━┩
+│ 0         │ greeting   │
+│ 1         │ greeting   │
+│ ...       │ ...        │
+└───────────┴────────━━━━┛
+[green]✓[/green] Predictions saved to: predictions/predictions_sample.csv
+
+---
+
+## Step 4: The Chatbot (RAG) Workflow
+
+For projects initialized with the chatbot plugin:
+
+```bash
+cd my_chatbot
+cp .env.example .env # Add your OPENAI_API_KEY
+python src/app.py
+```
+
+---
+
+## Teammate Quickstart Summary
+
+1. Activate: source .venv/bin/activate
+2. Initalize: mlcli init --plugin tabular
+3. Process: mlcli preprocess --input data.csv --target label
+4. Train: mlcli train
+5. Analyze: mlcli evaluate & mlcli suggest
+6. Predict: mlcli predict --input new_data.csv
+
+TIP: Use the -h flag on any command to see descriptive help!

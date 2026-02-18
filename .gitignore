@@ -91,3 +91,6 @@ bentos/
 # Temporary files
 *.tmp
 *.temp
+
+# Local chatbot project
+my_chatbot/
