@@ -61,6 +61,8 @@ def main(
         # Override target column if provided
         if target_column:
             config.data.target_column = target_column
+            from mlcli.core.config import save_config
+            save_config(config, project_dir / "mlcli.yaml")
         
         X_processed, y_processed, preprocessing_report = processor.preprocess_data(df, target_column)
         

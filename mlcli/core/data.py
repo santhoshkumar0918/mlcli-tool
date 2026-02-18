@@ -1,6 +1,7 @@
 """Data processing and preprocessing module."""
 
 import json
+import pickle
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -65,8 +66,8 @@ class DataProcessor:
             "columns": list(df.columns),
             "dtypes": df.dtypes.to_dict(),
             "missing_values": df.isnull().sum().to_dict(),
-            "missing_percentage": (df.isnull().sum() / len(df) * 100).to_dict(),
-            "duplicates": df.duplicated().sum(),
+            "missing_percentage": (df.isnull().sum() / len(df) * 100).to_dict() if len(df) > 0 else {col: 0.0 for col in df.columns},
+            "duplicates": df.duplicated().sum() if len(df) > 0 else 0,
             "memory_usage": df.memory_usage(deep=True).sum(),
         }
         
@@ -103,12 +104,13 @@ class DataProcessor:
         }
         
         # High missing values (>50%)
-        missing_pct = df.isnull().sum() / len(df)
-        issues["high_missing_columns"] = missing_pct[missing_pct > 0.5].index.tolist()
+        if len(df) > 0:
+            missing_pct = df.isnull().sum() / len(df)
+            issues["high_missing_columns"] = missing_pct[missing_pct > 0.5].index.tolist()
         
         # High cardinality categorical columns (>50% unique values)
         for col in df.select_dtypes(include=['object']).columns:
-            if df[col].nunique() / len(df) > 0.5:
+            if len(df) > 0 and df[col].nunique() / len(df) > 0.5:
                 issues["high_cardinality_columns"].append(col)
         
         # Constant columns
@@ -339,6 +341,58 @@ class DataProcessor:
             json.dump(report, f, indent=2, default=str)
         
         logger.info(f"Data profile saved to: {profile_path}")
+        
+        # Save fitted preprocessor
+        if self.preprocessor is not None:
+            preprocessor_path = output_dir / "preprocessor.pkl"
+            with open(preprocessor_path, "wb") as f:
+                pickle.dump(self.preprocessor, f)
+            logger.info(f"Preprocessor saved to: {preprocessor_path}")
+            
+        # Save label encoder
+        if self.label_encoder is not None:
+            encoder_path = output_dir / "label_encoder.pkl"
+            with open(encoder_path, "wb") as f:
+                pickle.dump(self.label_encoder, f)
+            logger.info(f"Label encoder saved to: {encoder_path}")
+            
+        # Save feature names
+        if self.feature_names:
+            names_path = output_dir / "feature_names.json"
+            with open(names_path, "w") as f:
+                json.dump(self.feature_names, f)
+
+    def load_preprocessor(self, artifacts_dir: Path) -> None:
+        """Load fitted preprocessor and related artifacts."""
+        artifacts_dir = Path(artifacts_dir)
+        
+        # Load preprocessor
+        preprocessor_path = artifacts_dir / "preprocessor.pkl"
+        if preprocessor_path.exists():
+            with open(preprocessor_path, "rb") as f:
+                self.preprocessor = pickle.load(f)
+            logger.info(f"Preprocessor loaded from: {preprocessor_path}")
+            
+        # Load label encoder
+        encoder_path = artifacts_dir / "label_encoder.pkl"
+        if encoder_path.exists():
+            with open(encoder_path, "rb") as f:
+                self.label_encoder = pickle.load(f)
+            logger.info(f"Label encoder loaded from: {encoder_path}")
+            
+        # Load feature names
+        names_path = artifacts_dir / "feature_names.json"
+        if names_path.exists():
+            with open(names_path, "r") as f:
+                self.feature_names = json.load(f)
+            logger.info(f"Feature names loaded from: {names_path}")
+            
+        # Load target name from data profile if available
+        profile_path = artifacts_dir / "data_profile.json"
+        if profile_path.exists():
+            with open(profile_path, "r") as f:
+                profile = json.load(f)
+                self.target_name = profile.get("target_info", {}).get("name")
     
     def transform_new_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """Transform new data using fitted preprocessor."""
