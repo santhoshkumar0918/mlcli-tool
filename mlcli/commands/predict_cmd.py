@@ -66,11 +66,13 @@ def main(
         
         # Load data processor if available
         data_processor = None
-        preprocessor_path = project_dir / "data" / "processed" / "data_profile.json"
-        if preprocessor_path.exists():
+        preprocessor_dir = project_dir / "data" / "processed"
+        if (preprocessor_dir / "preprocessor.pkl").exists():
             console.print("[blue]Loading data preprocessing pipeline...[/blue]")
             data_processor = DataProcessor(config.data)
-            # Note: In a full implementation, we'd save and load the fitted preprocessor
+            data_processor.load_preprocessor(preprocessor_dir)
+        elif (preprocessor_dir / "data_profile.json").exists():
+            console.print("[yellow]Warning:[/yellow] Preprocessing artifacts not found. Predictions might fail if features don't match.")
         
         # Detect task type from training summary
         task_type = "classification"  # Default
@@ -90,12 +92,12 @@ def main(
             # Process in batches for large datasets
             predictions_df = _predict_in_batches(
                 input_df, model, trainer, task_type, 
-                batch_size, include_probabilities
+                batch_size, include_probabilities, data_processor
             )
         else:
             # Process all at once for small datasets
             predictions_df = _make_predictions(
-                input_df, model, trainer, task_type, include_probabilities
+                input_df, model, trainer, task_type, include_probabilities, data_processor
             )
         
         # Save predictions
@@ -127,12 +129,18 @@ def _make_predictions(
     model,
     trainer: ModelTrainer,
     task_type: str,
-    include_probabilities: bool
+    include_probabilities: bool,
+    data_processor: Optional[DataProcessor] = None
 ) -> pd.DataFrame:
     """Make predictions on the input data."""
     
+    # Transform data if processor is available
+    features_df = input_df.copy()
+    if data_processor:
+        features_df = data_processor.transform_new_data(features_df)
+    
     # Make predictions
-    predictions = trainer.predict(model, input_df)
+    predictions = trainer.predict(model, features_df)
     
     # Create results dataframe
     results_df = input_df.copy()
@@ -140,7 +148,7 @@ def _make_predictions(
     
     # Add probabilities for classification
     if task_type == "classification" and include_probabilities:
-        probabilities = trainer.predict_proba(model, input_df)
+        probabilities = trainer.predict_proba(model, features_df)
         if probabilities is not None:
             # Add probability columns
             n_classes = probabilities.shape[1]
@@ -159,7 +167,8 @@ def _predict_in_batches(
     trainer: ModelTrainer,
     task_type: str,
     batch_size: int,
-    include_probabilities: bool
+    include_probabilities: bool,
+    data_processor: Optional[DataProcessor] = None
 ) -> pd.DataFrame:
     """Make predictions in batches for large datasets."""
     
@@ -180,7 +189,7 @@ def _predict_in_batches(
             
             # Make predictions for this batch
             batch_results = _make_predictions(
-                batch_df, model, trainer, task_type, include_probabilities
+                batch_df, model, trainer, task_type, include_probabilities, data_processor
             )
             results_list.append(batch_results)
             
