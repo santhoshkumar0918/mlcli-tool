@@ -21,6 +21,9 @@ class DataConfig(BaseModel):
     encoding_strategy: str = Field(default="auto", pattern="^(auto|onehot|label|target)$")
     test_size: float = Field(default=0.2, ge=0.1, le=0.5)
     random_state: int = Field(default=42)
+    
+    class Config:
+        extra = "allow"
 
 
 class ModelConfig(BaseModel):
@@ -33,15 +36,13 @@ class ModelConfig(BaseModel):
     max_iter: int = Field(default=1000)
     random_state: int = Field(default=42)
     
+    class Config:
+        extra = "allow"
+    
     @validator("algorithms")
     def validate_algorithms(cls, v: List[str]) -> List[str]:
-        valid_algorithms = {
-            "logistic_regression", "random_forest", "xgboost", 
-            "svm", "naive_bayes", "knn"
-        }
-        for algo in v:
-            if algo not in valid_algorithms:
-                raise ValueError(f"Invalid algorithm: {algo}")
+        # Skip validation if we're in a specialized plugin (e.g. image-classification doesn't use these)
+        # We can implement plugin-specific validation later
         return v
 
 
@@ -57,6 +58,9 @@ class DeploymentConfig(BaseModel):
     environment: Dict[str, str] = Field(default_factory=dict)
     secrets: Dict[str, str] = Field(default_factory=dict)
     timeout: int = Field(default=300, ge=60)
+    
+    class Config:
+        extra = "allow"
 
 
 class MLCLIConfig(BaseModel):
@@ -65,12 +69,14 @@ class MLCLIConfig(BaseModel):
     project_name: str
     version: str = Field(default="0.1.0")
     description: Optional[str] = None
+    plugin: str = Field(default="tabular")
     data: DataConfig = Field(default_factory=DataConfig)
     model: ModelConfig = Field(default_factory=ModelConfig)
     deployment: DeploymentConfig = Field(default_factory=DeploymentConfig)
     
     class Config:
-        extra = "forbid"
+        extra = "allow"
+
 
 
 def load_config_file(config_path: Path) -> Dict[str, Any]:

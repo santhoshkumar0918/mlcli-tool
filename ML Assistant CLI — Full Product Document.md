@@ -21,25 +21,29 @@ ML workflows are fragmented across many tools for data prep, model training, pac
 
 ## Key Capabilities
 
-- End-to-end workflow in one CLI: init, preprocess, train, evaluate, suggest, predict, package, deploy, monitor, rollback.[^1][^2][^3][^4]
-- AI-guided hints: data quality warnings and simple rules for class imbalance, overfitting, and hyperparameter nudge points (local heuristics).
-- Packaging via BentoML: build and version Bento artifacts and OCI images automatically for portability and reproducibility.[^8][^3][^1]
-- Cloud integrations:
-    - BentoCloud: bentoml deploy with scaling, instance type, rollout strategy, env/secrets, and wait/timeout controls.[^9][^2]
-    - Azure ML: managed online endpoints with SDK v2/CLI, blue/green deployments, traffic split, local Docker testing, and rollback by traffic mapping.[^5][^4]
-    - AWS SageMaker HyperPod: HyperPod CLI to connect clusters, submit jobs, retrieve logs; used for training and orchestrated deployments in AWS-managed infra.[^7][^10][^11]
+- **Domain-Adaptive Initialization**: Project scaffolding via a modular **Plugin System** (`--plugin tabular`, `chatbot`, `image-classification`).
+- **End-to-end workflow**: Unified CLI for `init`, `preprocess`, `train`, `evaluate`, `suggest`, `predict`, `package`, `deploy`, `monitor`, and `rollback`.
+- **AI-Powered Recommendations**: 
+  - *Current*: Rule-based data quality and hyperparameter nudges.
+  - *Future*: Meta-ML inference engine for personalized engineering advice.
+- **Unified Packaging (BentoML)**: Automated Bento artifact and OCI image creation for zero-config reproducibility.
+- **Multi-Cloud Deployment**:
+    - **BentoCloud**: Serverless deployment with auto-scaling and rolling updates.
+    - **Azure ML**: Managed online endpoints with blue/green traffic splitting.
+    - **AWS SageMaker**: Orchestrated job submission and cluster management via SageMaker HyperPod.
 
 
 ## Architecture
 
-- CLI core (Python/Typer/Click): orchestrates data, model, evaluation, packaging, provider modules, and a local state/registry file.
-- Data/Model/Eval modules: pandas/sklearn/XGBoost pipeline with metrics reports and suggestions.
-- Packaging module: generates Bento service scaffold and invokes bento build; produces Bento tag and image for local or cloud use.[^3][^8][^1]
-- Providers module:
-    - BentoCloud: wraps bentoml cloud login/deploy; supports config file/flags, scaling, instance types, rollout strategies, env/secrets, and logs/status.[^12][^2][^9]
-    - Azure ML: wraps Python SDK v2 and az ml for online endpoints, deployments, scaling, traffic, logs, and local Docker testing with --local.[^4][^5]
-    - HyperPod: wraps HyperPod CLI for cluster connect, job submit, logs, and environment management on EKS-backed clusters.[^10][^11][^7]
-- State and rollback: local registry mapping model versions→Bento tags/images→endpoints and traffic allocations for simple rollbacks using provider-native mechanisms.[^2][^5][^4]
+- **CLI Core (Python/Typer)**: Command routing, configuration management, and interactive terminal UI via `rich`.
+- **Plugin System**:
+    - **`PluginBase`**: Abstract interface for domain-specific logic.
+    - **`PluginRegistry`**: Dynamic discovery of built-in and custom templates.
+    - **Domain Plugins**: `Tabular` (Sklearn), `Chatbot` (LangChain), `ImageClassification` (PyTorch).
+- **Core Operations**: Modular engines for Data Processing, Model Training, and Evaluation.
+- **Packaging Engine**: Wraps model artifacts into BentoML services using generated `bentofile.yaml`.
+- **Provider Adapters**: Thin wrappers for cloud-native SDKs (BentoCloud, Azure ML, AWS SageMaker).
+- **State Registry**: Local tracking of model versions, container tags, and endpoint traffic statuses.
 
 
 ## User Flows
@@ -94,19 +98,16 @@ ML workflows are fragmented across many tools for data prep, model training, pac
 
 ## Command Surface
 
-- init: scaffold project directories and config.
-- preprocess: clean/encode/scale; emit data_profile.json.
-- train: train baseline models with basic HPO; save model.pkl and training summary.
-- evaluate: compute metrics and diagnostics; save metrics.json.
-- predict: batch CSV predictions to predictions.csv.
-- suggest: rule-based guidance for improvements.
-- package: generate Bento service and bento build for versioned Bento tag/image.[^8][^1]
-- deploy:
-    - bentocloud: bentoml deploy with name, cluster, scaling, instance type, strategy, env, secrets, wait/timeout, and config dict/file.[^2][^9]
-    - azureml: create endpoint and ManagedOnlineDeployment via SDK v2/CLI; set traffic; support local Docker test with --local; scale and split traffic.[^4][^5]
-    - hyperpod: connect cluster and submit deploy/training job; inspect logs and status; manage lifecycle via HyperPod CLI.[^11][^10][^7]
-- monitor: tail provider logs/status and print quick diagnostics.[^10][^12][^7][^4]
-- rollback: switch traffic/version per provider (BentoCloud strategy/previous Bento; Azure traffic map; HyperPod redeploy).[^7][^10][^5][^2][^4]
+- init: Scaffolds project using `--plugin` strategy (tabular, chatbot, image-classification).
+- preprocess: Data cleaning and profiling; emits `data_profile.json`.
+- train: Plugin-aware model training with hyperparameter tuning; saves `model.pkl`.
+- evaluate: Detailed metrics, diagnostics, and visual reports.
+- suggest:AI-guided recommendations (Rule-based → Meta-ML).
+- predict: Batch inference for new datasets.
+- package: Containerizes project via BentoML versioned tags.
+- deploy: Multi-provider deployment management (scaling, rollout strategies).
+- monitor: Real-time logs and health status from cloud endpoints.
+- rollback: Reversion to previous stable traffic/version configurations.
 
 
 ## Example Commands
@@ -124,9 +125,16 @@ ML workflows are fragmented across many tools for data prep, model training, pac
 
 ## Technical Execution Plan
 
-- Phase 1 (Local MVP): implement core commands and artifacts; Bento packaging and local serve; one tutorial; environment checks.[^6][^8][^1]
-- Phase 2 (Cloud MVP — BentoCloud): add deploy/monitor/rollback with bentoml deploy and config file support; emit endpoint URL and curl example.[^3][^9][^2]
-- Phase 3 (Full Product): add Azure ML and HyperPod backends with parity features (traffic split, logs, local test), CI-friendly non-interactive flows, and stateful rollbacks.[^10][^7][^4][^5]
+- **Phase 1: Modular Foundation (ACTIVE)**: 
+    - ✅ Plugin Core (Base/Registry).
+    - ✅ Tabular, Chatbot, and Image Plugins.
+    - ✅ Boilerplate generation for domain-specific ML.
+- **Phase 2: Cloud Integration (UP NEXT)**:
+    - Implement `package` command via BentoML.
+    - Initial `deploy` support for BentoCloud.
+- **Phase 3: Intelligence & Scale**:
+    - Transition to Meta-ML suggestion engine.
+    - Full multi-provider cloud support (Azure/AWS).
 
 
 ## Risks and Mitigations
