@@ -84,11 +84,15 @@ def main(
         # Save preprocessing artifacts
         processor.save_preprocessing_artifacts(output_dir, preprocessing_report)
         
+        # Save complete preprocessing pipeline for predictions
+        processor.save_pipeline(output_dir)
+        
         # Display results
         console.print(f"[green]✓[/green] Preprocessing complete")
         console.print(f"[green]✓[/green] Training data saved: {train_path} ({len(X_train)} samples)")
         console.print(f"[green]✓[/green] Test data saved: {test_path} ({len(X_test)} samples)")
         console.print(f"[green]✓[/green] Data profile saved: {output_dir / 'data_profile.json'}")
+        console.print(f"[green]✓[/green] Preprocessing pipeline saved: {output_dir / 'preprocessing_pipeline.pkl'}")
         
         # Show next steps
         console.print("\n[bold]Next steps:[/bold]")

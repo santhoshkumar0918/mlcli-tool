@@ -2,9 +2,11 @@
 
 import json
 import pickle
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+import joblib
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
@@ -408,3 +410,99 @@ class DataProcessor:
         
         # Convert to DataFrame
         return pd.DataFrame(X_transformed, columns=self.feature_names, index=df.index)
+    
+    def save_pipeline(self, output_dir: Path) -> None:
+        """Save complete fitted preprocessing pipeline as a single artifact.
+        
+        This saves all preprocessing components in a single file for reliability:
+        - Fitted preprocessor (ColumnTransformer)
+        - Label encoder (if classification)
+        - Feature names (for DataFrame conversion)
+        - Target name
+        - Configuration
+        - Metadata (version, timestamp)
+        
+        Args:
+            output_dir: Directory to save pipeline artifact
+            
+        Raises:
+            DataError: If preprocessor not fitted
+        """
+        if self.preprocessor is None:
+            raise DataError("Cannot save pipeline: preprocessor not fitted. Run preprocess_data first.")
+        
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Bundle everything into a single artifact
+        pipeline_artifact = {
+            "version": "1.0.0",
+            "created_at": datetime.now().isoformat(),
+            "preprocessor": self.preprocessor,
+            "label_encoder": self.label_encoder,
+            "feature_names": self.feature_names,
+            "target_name": self.target_name,
+            "config": self.config.dict(),
+            "metadata": {
+                "n_features_in": len(self.feature_names) if self.feature_names else 0,
+                "has_label_encoder": self.label_encoder is not None,
+            }
+        }
+        
+        pipeline_path = output_dir / "preprocessing_pipeline.pkl"
+        joblib.dump(pipeline_artifact, pipeline_path, compress=3)
+        logger.info(f"✓ Preprocessing pipeline saved: {pipeline_path}")
+        logger.info(f"  Features: {len(self.feature_names)} | Target: {self.target_name}")
+    
+    @classmethod
+    def load_pipeline(cls, pipeline_path: Path) -> 'DataProcessor':
+        """Load a previously saved preprocessing pipeline.
+        
+        This creates a new DataProcessor instance with all fitted components
+        restored from the saved artifact.
+        
+        Args:
+            pipeline_path: Path to preprocessing_pipeline.pkl or directory containing it
+            
+        Returns:
+            DataProcessor instance with loaded pipeline
+            
+        Raises:
+            DataError: If pipeline file not found or invalid
+        """
+        pipeline_path = Path(pipeline_path)
+        
+        # Handle both file path and directory path
+        if pipeline_path.is_dir():
+            pipeline_path = pipeline_path / "preprocessing_pipeline.pkl"
+        
+        if not pipeline_path.exists():
+            raise DataError(f"Pipeline file not found: {pipeline_path}")
+        
+        try:
+            pipeline_artifact = joblib.load(pipeline_path)
+        except Exception as e:
+            raise DataError(f"Failed to load pipeline: {e}")
+        
+        # Validate artifact version
+        version = pipeline_artifact.get("version", "0.0.0")
+        if not version.startswith("1."):
+            logger.warning(f"Loading pipeline version {version}, current version is 1.0.0")
+        
+        # Recreate DataProcessor with original config
+        from mlcli.core.config import DataConfig
+        config = DataConfig(**pipeline_artifact["config"])
+        processor = cls(config)
+        
+        # Restore fitted components
+        processor.preprocessor = pipeline_artifact["preprocessor"]
+        processor.label_encoder = pipeline_artifact.get("label_encoder")
+        processor.feature_names = pipeline_artifact["feature_names"]
+        processor.target_name = pipeline_artifact.get("target_name")
+        
+        logger.info(f"✓ Preprocessing pipeline loaded: {pipeline_path}")
+        metadata = pipeline_artifact.get("metadata", {})
+        logger.info(f"  Features: {metadata.get('n_features_in', 'unknown')} | "
+                   f"Target: {processor.target_name or 'unknown'}")
+        
+        return processor
