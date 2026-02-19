@@ -64,15 +64,16 @@ def main(
         trainer = ModelTrainer(config.model)
         model = trainer.load_model(model_path)
         
-        # Load data processor if available
-        data_processor = None
-        preprocessor_dir = project_dir / "data" / "processed"
-        if (preprocessor_dir / "preprocessor.pkl").exists():
-            console.print("[blue]Loading data preprocessing pipeline...[/blue]")
-            data_processor = DataProcessor(config.data)
-            data_processor.load_preprocessor(preprocessor_dir)
-        elif (preprocessor_dir / "data_profile.json").exists():
-            console.print("[yellow]Warning:[/yellow] Preprocessing artifacts not found. Predictions might fail if features don't match.")
+        # Load preprocessing pipeline (REQUIRED for correct predictions)
+        pipeline_path = project_dir / "data" / "processed" / "preprocessing_pipeline.pkl"
+        if not pipeline_path.exists():
+            console.print(f"[red]Error:[/red] Preprocessing pipeline not found: {pipeline_path}")
+            console.print("[yellow]Hint:[/yellow] Run [cyan]mlcli preprocess[/cyan] first to generate the pipeline")
+            console.print("[yellow]Note:[/yellow] The pipeline is required to apply the same transformations used during training")
+            raise typer.Exit(1)
+        
+        console.print(f"[blue]Loading preprocessing pipeline from:[/blue] {pipeline_path}")
+        data_processor = DataProcessor.load_pipeline(pipeline_path)
         
         # Detect task type from training summary
         task_type = "classification"  # Default
@@ -130,14 +131,21 @@ def _make_predictions(
     trainer: ModelTrainer,
     task_type: str,
     include_probabilities: bool,
-    data_processor: Optional[DataProcessor] = None
+    data_processor: DataProcessor
 ) -> pd.DataFrame:
-    """Make predictions on the input data."""
+    """Make predictions on the input data.
     
-    # Transform data if processor is available
-    features_df = input_df.copy()
-    if data_processor:
-        features_df = data_processor.transform_new_data(features_df)
+    Args:
+        input_df: Raw input data
+        model: Trained model
+        trainer: ModelTrainer instance
+        task_type: "classification" or "regression"
+        include_probabilities: Whether to include prediction probabilities
+        data_processor: Fitted preprocessing pipeline (REQUIRED)
+    """
+    
+    # Transform data using fitted preprocessing pipeline
+    features_df = data_processor.transform_new_data(input_df)
     
     # Make predictions
     predictions = trainer.predict(model, features_df)
@@ -168,7 +176,7 @@ def _predict_in_batches(
     task_type: str,
     batch_size: int,
     include_probabilities: bool,
-    data_processor: Optional[DataProcessor] = None
+    data_processor: DataProcessor
 ) -> pd.DataFrame:
     """Make predictions in batches for large datasets."""
     
