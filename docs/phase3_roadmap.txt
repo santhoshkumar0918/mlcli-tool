@@ -1,0 +1,304 @@
+# Phase 3 Implementation Roadmap
+
+```
+                    PHASE 3: AI-POWERED SUGGESTIONS
+                    ================================
+
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│  CURRENT STATE: Rule-based suggestions (mlcli/commands/        │
+│                 suggest_cmd.py with hardcoded heuristics)      │
+│                                                                 │
+│  TARGET STATE:  Meta-ML recommendation engine with confidence  │
+│                 scores, telemetry-driven learning, graceful    │
+│                 fallback to rules                              │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+
+                              │
+                              │
+                              ▼
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  PHASE 3A: INFRASTRUCTURE FOUNDATION (Week 1-2)               ┃
+┃  Priority: P0 — BLOCKERS for everything else                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+        ▼                     ▼                     ▼
+  ┌──────────┐        ┌──────────┐        ┌──────────┐
+  │ 3A.1     │        │ 3A.2     │        │ 3A.3     │
+  │ Schema   │        │ Pipeline │        │ Artifact │
+  │ Validate │◄───────│ Persist  │───────►│ Version  │
+  │          │        │          │        │          │
+  │ 2 days   │        │ 1 day    │        │ 2 days   │
+  └────┬─────┘        └────┬─────┘        └────┬─────┘
+       │                   │                    │
+       └───────────────────┼────────────────────┘
+                           │
+                           ▼
+                    ┌──────────┐
+                    │ 3A.4     │
+                    │ Telemetry│
+                    │ Collect  │
+                    │          │
+                    │ 2 days   │
+                    └────┬─────┘
+                         │
+            ✅ CHECKPOINT: Infrastructure Ready
+                         │
+                         │
+                         ▼
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  PHASE 3B: KNOWLEDGE BASE ENGINEERING (Week 3)                ┃
+┃  Priority: P1 — Required for training                         ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                              │
+                ┌─────────────┴─────────────┐
+                │                           │
+                ▼                           ▼
+        ┌──────────────┐           ┌──────────────┐
+        │ 3B.1         │           │ 3B.2         │
+        │ Synthetic KB │──────────►│ Feature      │
+        │ Generator    │           │ Engineering  │
+        │              │           │              │
+        │ 3 days       │           │ 2 days       │
+        └──────┬───────┘           └──────┬───────┘
+               │                          │
+               └──────────┬───────────────┘
+                          │
+             ✅ CHECKPOINT: 10k+ labeled scenarios
+                          │
+                          │
+                          ▼
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  PHASE 3C: META-ML ENGINE (Week 4-5)                          ┃
+┃  Priority: P1 — Core recommendation system                    ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                              │
+                ┌─────────────┴─────────────┐
+                │                           │
+                ▼                           ▼
+        ┌──────────────┐           ┌──────────────┐
+        │ 3C.1         │           │ 3C.2         │
+        │ Model        │──────────►│ Training     │
+        │ Architecture │           │ Script       │
+        │              │           │              │
+        │ 3 days       │           │ 2 days       │
+        └──────┬───────┘           └──────┬───────┘
+               │                          │
+               └──────────┬───────────────┘
+                          │
+                          ▼
+                 ┌──────────────────┐
+                 │ 3C.3             │
+                 │ Confidence       │
+                 │ Calibration      │
+                 │                  │
+                 │ 2 days           │
+                 └────────┬─────────┘
+                          │
+          ✅ CHECKPOINT: Model achieves <0.15 Hamming loss
+                          │
+                          │
+                          ▼
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  PHASE 3D: PRODUCTION INTEGRATION (Week 6)                    ┃
+┃  Priority: P1 — User-facing release                           ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                              │
+                ┌─────────────┴─────────────┐
+                │                           │
+                ▼                           ▼
+        ┌──────────────┐           ┌──────────────┐
+        │ 3D.1         │           │ 3D.2         │
+        │ Upgrade      │──────────►│ UI/UX        │
+        │ Suggest CMD  │           │ Confidence   │
+        │              │           │ Visualization│
+        │ 2 days       │           │ 1 day        │
+        └──────┬───────┘           └──────┬───────┘
+               │                          │
+               └──────────┬───────────────┘
+                          │
+                          ▼
+                 ┌──────────────────┐
+                 │ 3D.3             │
+                 │ Testing &        │
+                 │ Documentation    │
+                 │                  │
+                 │ 2 days           │
+                 └────────┬─────────┘
+                          │
+                          │
+                          ▼
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  🚀 LAUNCH: META-ML POWERED SUGGESTIONS                       ┃
+┃                                                               ┃
+┃  ✅ mlcli suggest now uses AI with confidence scores          ┃
+┃  ✅ Graceful fallback to rules if ML fails                    ┃
+┃  ✅ Telemetry collecting user feedback                        ┃
+┃  ✅ Ready for continuous learning loop                        ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                              │
+                              │
+                              ▼
+
+┌─────────────────────────────────────────────────────────────────┐
+│  CONTINUOUS IMPROVEMENT (Months 2+)                             │
+│                                                                 │
+│  Month 2-3: Collect 1000+ real project traces                  │
+│  Month 4+:  Retrain quarterly with real data                   │
+│            A/B test new versions                               │
+│            Deploy via GitHub releases                          │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+
+
+════════════════════════════════════════════════════════════════════
+                         DEPENDENCIES
+════════════════════════════════════════════════════════════════════
+
+BLOCKING DEPENDENCIES (Must complete before starting next phase):
+
+  3A (Infrastructure) ─────► 3B (Knowledge Base)
+                             │
+                             └──────► 3C (Meta-ML Engine)
+                                      │
+                                      └──────► 3D (Integration)
+
+
+PARALLEL WORK OPPORTUNITIES:
+
+  3A.1 (Schemas) ║  
+  3A.2 (Pipeline) ║  ← Can work simultaneously (different files)
+  3A.3 (Versioning) ║
+
+  3B.1 (KB Gen) ║
+  3B.2 (Features) ║  ← Can work simultaneously (shared interface)
+
+
+════════════════════════════════════════════════════════════════════
+                      RESOURCE ALLOCATION
+════════════════════════════════════════════════════════════════════
+
+IDEAL TEAM:
+  • 1 Senior ML Engineer (leads 3B, 3C)
+  • 1 Senior Backend Engineer (leads 3A, 3D)
+  • 1 QA/Doc Engineer (leads 3D.3)
+
+MINIMUM VIABLE TEAM:
+  • 1 Senior ML/SDE (does everything, 8-10 weeks)
+
+PARALLEL TEAM (FASTEST):
+  • 2 Engineers working simultaneously
+  • Week 1-2: Both on 3A (different tasks)
+  • Week 3: Engineer A on 3B, Engineer B on testing/docs
+  • Week 4-5: Both on 3C (training + evaluation)
+  • Week 6: Both on 3D (integration + release)
+  • Timeline: 6 weeks → 4 weeks (33% faster)
+
+
+════════════════════════════════════════════════════════════════════
+                      RISK MITIGATION MAP
+════════════════════════════════════════════════════════════════════
+
+HIGH RISK ITEMS:
+
+  🔴 3A.2 (Pipeline Persistence)
+     Risk: Breaking changes to predict command
+     Mitigation: Write integration tests FIRST
+     Fallback: Keep old predict logic with --no-pipeline flag
+
+  🟡 3C.2 (Model Training)
+     Risk: Model doesn't converge or has poor accuracy
+     Mitigation: Start with simple baseline (Logistic Regression)
+     Fallback: Use rule-based suggestions (already works)
+
+  🟡 3D.1 (Suggest Command Refactor)
+     Risk: Breaking existing functionality
+     Mitigation: Keep old command as suggest_cmd_legacy.py
+     Fallback: --engine=rules flag to use old logic
+
+LOW RISK ITEMS:
+
+  🟢 3A.1 (Schemas): Low risk, pure validation layer
+  🟢 3A.4 (Telemetry): Optional, can ship without
+  🟢 3B.1 (KB Gen): Synthetic data, can iterate
+
+
+════════════════════════════════════════════════════════════════════
+                    FILES TO CREATE/MODIFY
+════════════════════════════════════════════════════════════════════
+
+NEW FILES (23):
+  mlcli/core/schemas/__init__.py
+  mlcli/core/schemas/base.py
+  mlcli/core/schemas/data_profile.py
+  mlcli/core/schemas/training_summary.py
+  mlcli/core/schemas/evaluation_report.py
+  
+  mlcli/core/versioning/__init__.py
+  mlcli/core/versioning/artifact_tracker.py
+  mlcli/core/versioning/model_registry.py
+  
+  mlcli/core/telemetry/__init__.py
+  mlcli/core/telemetry/collector.py
+  mlcli/core/telemetry/privacy.py
+  
+  mlcli/meta_ml/__init__.py
+  mlcli/meta_ml/knowledge_base.py
+  mlcli/meta_ml/features.py
+  mlcli/meta_ml/engine.py
+  mlcli/meta_ml/models.py
+  mlcli/meta_ml/training.py
+  
+  scripts/train_meta_ml.py
+  scripts/generate_knowledge_base.py
+  
+  tests/test_schemas.py
+  tests/test_artifact_tracker.py
+  tests/test_telemetry.py
+  tests/test_meta_ml.py
+
+MODIFIED FILES (5):
+  mlcli/core/data.py (add save/load pipeline)
+  mlcli/commands/preprocess_cmd.py (call save_pipeline)
+  mlcli/commands/predict_cmd.py (load pipeline)
+  mlcli/commands/suggest_cmd.py (MAJOR refactor)
+  mlcli/commands/train_cmd.py (register artifacts)
+
+
+════════════════════════════════════════════════════════════════════
+                      SUCCESS METRICS
+════════════════════════════════════════════════════════════════════
+
+PHASE 3A SUCCESS:
+  ✅ Predict command uses correct preprocessing (integration test)
+  ✅ All artifacts pass Pydantic validation
+  ✅ Artifact registry tracks 10+ artifact types
+  ✅ Telemetry logs events without PII
+
+PHASE 3B SUCCESS:
+  ✅ 10,000+ synthetic scenarios generated
+  ✅ >90% accuracy on manual review (100 samples)
+  ✅ Feature extractor handles edge cases gracefully
+
+PHASE 3C SUCCESS:
+  ✅ Model achieves <0.15 Hamming loss on test set
+  ✅ Calibrated probabilities (Brier score <0.2)
+  ✅ Inference latency <100ms
+
+PHASE 3D SUCCESS:
+  ✅ Suggest command shows ML suggestions with confidence
+  ✅ Graceful fallback to rules works
+  ✅ 5 beta users confirm suggestions are helpful
+  ✅ Test coverage >75%
+
+
+════════════════════════════════════════════════════════════════════
+```
