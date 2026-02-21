@@ -12,6 +12,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from mlcli.core.exceptions import DataError
+from mlcli.core.suggestion_model.model import MLSuggestionEngine
 from mlcli.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -89,6 +90,7 @@ def _generate_suggestions(reports: Dict[str, Any], config) -> Dict[str, Any]:
     """Generate AI-guided suggestions based on available reports."""
     
     suggestions = {
+        "ml_suggestions": [],
         "data_suggestions": [],
         "model_suggestions": [],
         "performance_suggestions": [],
@@ -96,6 +98,13 @@ def _generate_suggestions(reports: Dict[str, Any], config) -> Dict[str, Any]:
         "priority_actions": []
     }
     
+    # ML-based suggestions (The new "Big Brain" engine)
+    if 'data_profile' in reports and 'evaluation' in reports:
+        engine = MLSuggestionEngine()
+        ml_suggestions = engine.get_suggestions(reports['data_profile'], reports['evaluation'])
+        suggestions["ml_suggestions"].extend(ml_suggestions)
+    
+    # Fallback/Complementary Rule-based suggestions
     # Data-based suggestions
     if 'data_profile' in reports:
         data_suggestions = _analyze_data_quality(reports['data_profile'])
@@ -326,9 +335,9 @@ def _determine_priority_actions(suggestions: Dict[str, Any]) -> List[Dict[str, A
         if category != "priority_actions":
             all_suggestions.extend(suggestion_list)
     
-    # Sort by priority (High > Medium > Low)
+    # Sort by priority (High > Medium > Low) and confidence
     priority_order = {"High": 3, "Medium": 2, "Low": 1}
-    all_suggestions.sort(key=lambda x: priority_order.get(x.get("priority", "Low"), 1), reverse=True)
+    all_suggestions.sort(key=lambda x: (priority_order.get(x.get("priority", "Low"), 1), x.get("confidence", 0)), reverse=True)
     
     # Return top 5 priority actions
     return all_suggestions[:5]
@@ -363,6 +372,30 @@ def _display_suggestions(suggestions: Dict[str, Any]) -> None:
                 border_style=priority_color
             ))
     
+    # ML Suggestions Section
+    ml_suggestions = suggestions.get("ml_suggestions", [])
+    if ml_suggestions:
+        console.print("\n[bold magenta]🧠 AI-Powered ML Recommendations (Meta-Model Analysis)[/bold magenta]")
+        
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Confidence", style="cyan", width=12)
+        table.add_column("Issue Identified", style="red", width=30)
+        table.add_column("Action Recommended", style="green", width=40)
+        table.add_column("Potential Impact", style="blue", width=30)
+        
+        for suggestion in ml_suggestions:
+            confidence = suggestion.get("confidence", 0.0)
+            conf_color = "green" if confidence > 0.7 else "yellow"
+            
+            table.add_row(
+                f"[{conf_color}]{confidence*100:.1f}% Match[/{conf_color}]",
+                suggestion.get("issue", "N/A"),
+                suggestion.get("suggestion", "N/A"),
+                suggestion.get("impact", "N/A")
+            )
+        
+        console.print(table)
+
     # Detailed suggestions by category
     categories = ["data_suggestions", "model_suggestions", "performance_suggestions", "deployment_suggestions"]
     category_titles = {
