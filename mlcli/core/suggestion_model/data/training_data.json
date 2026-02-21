@@ -1,0 +1,62 @@
+[
+  {
+    "features": {
+      "n_samples": 20,
+      "n_features": 3,
+      "missing_pct_max": 0.0,
+      "imbalance_ratio": 1.0,
+      "accuracy": 0.5,
+      "f1_score": 0.33,
+      "precision_recall_gap": 0.25
+    },
+    "suggestions": ["COLLECT_MORE_DATA", "TRY_SIMPLE_MODELS", "FEATURE_ENGINEERING"]
+  },
+  {
+    "features": {
+      "n_samples": 1000,
+      "n_features": 2,
+      "missing_pct_max": 0.0,
+      "imbalance_ratio": 10.0,
+      "accuracy": 0.9,
+      "f1_score": 0.5,
+      "precision_recall_gap": 0.4
+    },
+    "suggestions": ["SMOTE_IMBALANCE", "CLASS_WEIGHTS", "STRATIFIED_SAMPLING"]
+  },
+  {
+    "features": {
+      "n_samples": 500,
+      "n_features": 100,
+      "missing_pct_max": 0.0,
+      "imbalance_ratio": 1.1,
+      "accuracy": 0.75,
+      "f1_score": 0.74,
+      "precision_recall_gap": 0.05
+    },
+    "suggestions": ["FEATURE_SELECTION", "DIMENSIONALITY_REDUCTION", "REGULARIZATION"]
+  },
+  {
+    "features": {
+      "n_samples": 5000,
+      "n_features": 10,
+      "missing_pct_max": 0.3,
+      "imbalance_ratio": 1.0,
+      "accuracy": 0.65,
+      "f1_score": 0.64,
+      "precision_recall_gap": 0.02
+    },
+    "suggestions": ["HYPERPARAMETER_TUNING", "TRY_ENSEMBLE_MODELS", "XGBOOST_UPGRADE"]
+  },
+  {
+    "features": {
+      "n_samples": 200,
+      "n_features": 5,
+      "missing_pct_max": 0.6,
+      "imbalance_ratio": 1.5,
+      "accuracy": 0.55,
+      "f1_score": 0.5,
+      "precision_recall_gap": 0.1
+    },
+    "suggestions": ["HANDLE_MISSING_VALUES", "DATA_CLEANING", "FEATURE_IMPUTATION"]
+  }
+]
