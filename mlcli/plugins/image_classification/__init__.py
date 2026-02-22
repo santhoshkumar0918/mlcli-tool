@@ -12,33 +12,24 @@ class ImageClassificationPlugin(PluginBase):
     
     name = "image-classification"
     description = "Computer Vision with PyTorch & CNNs"
-    dependencies = ["torch", "torchvision", "pytorch-lightning", "albumentations"]
+    dependencies = ["torch", "torchvision", "pytorch-lightning"]
     
     def get_directory_structure(self) -> List[str]:
-        """Return directory structure for image classification projects."""
+        """Return minimal directory structure for image classification projects."""
         return [
             "data/raw",
-            "data/processed",
-            "src/models",
-            "src/data",
-            "src/training",
-            "notebooks",
-            "tests",
-            "logs",
-            "checkpoints"
+            "src",
         ]
     
     def get_boilerplate_files(self) -> Dict[str, str]:
-        """Return boilerplate files."""
+        """Return essential boilerplate files."""
         return {
             "README.md": self._get_readme(),
             ".gitignore": self._get_gitignore(),
             "requirements.txt": self.get_requirements(),
-            "src/models/cnn.py": self._get_cnn_model(),
-            "src/data/dataset.py": self._get_dataset(),
-            "src/training/trainer.py": self._get_trainer(),
+            "src/model.py": self._get_model(),
+            "src/data.py": self._get_data(),
             "train.py": self._get_train_script(),
-            "notebooks/01_visualize_data.ipynb": self._get_notebook(),
         }
     
     def get_requirements(self) -> str:
@@ -54,8 +45,9 @@ albumentations>=1.3.0
 # Utilities
 numpy>=1.24.0
 matplotlib>=3.7.0
-rich>=13.0.0
+pillow>=10.0.0
 pyyaml>=6.0
+rich>=13.0.0
 """
     
     def get_config_template(self) -> Dict[str, Any]:
@@ -65,187 +57,388 @@ pyyaml>=6.0
             "model": {
                 "architecture": "resnet18",
                 "num_classes": 10,
-                "pretrained": True
+                "pretrained": True,
             },
             "training": {
                 "batch_size": 32,
                 "epochs": 10,
                 "learning_rate": 0.001,
-                "accelerator": "auto"  # cpu, gpu, mps
+                "accelerator": "auto",
             }
         }
     
     def _get_readme(self) -> str:
         return """# Image Classification Project
 
-Built with MLCLI image-classification plugin.
-
-## Structure
-- `src/models/`: CNN architectures (ResNet, etc.)
-- `src/data/`: Dataset classes and transforms
-- `src/training/`: Training loops (PyTorch Lightning)
-- `checkpoints/`: Model weights
+Built with **ML Assistant CLI** image-classification plugin.
 
 ## Quick Start
-1. Place images in `data/raw/` (organized by folder/class)
-2. Run training: `python train.py`
-3. Visualize results: `notebooks/01_visualize_data.ipynb`
+
+```bash
+# 1. Organize your images
+# Place images in data/raw/ organized by class:
+# data/raw/
+#   ├── class1/
+#   │   ├── img1.jpg
+#   │   └── img2.jpg
+#   └── class2/
+#       ├── img3.jpg
+#       └── img4.jpg
+
+# 2. Update mlcli.yaml with your number of classes
+# model:
+#   num_classes: 2  # Change this to your actual number
+
+# 3. Train
+python train.py
+```
+
+## Project Structure
+
+```
+├── data/
+│   └── raw/           # Images organized by class folders
+├── src/
+│   ├── model.py       # CNN model definition
+│   └── data.py        # Data loading utilities
+├── train.py           # Training script
+└── mlcli.yaml         # Configuration
+```
+
+## Configuration
+
+Edit `mlcli.yaml` to customize:
+- Model architecture (resnet18, resnet50, efficientnet, etc.)
+- Number of classes
+- Batch size and learning rate
+- Number of epochs
+
+## Supported Architectures
+
+- ResNet (18, 34, 50, 101)
+- EfficientNet (b0-b7)
+- MobileNet v2/v3
+- Custom CNNs
+
+## Next Steps
+
+1. Organize your images in `data/raw/` by class
+2. Update `num_classes` in `mlcli.yaml`
+3. Run `python train.py`
 """
     
     def _get_gitignore(self) -> str:
-        return """__pycache__/
+        return """# Python
+__pycache__/
 *.py[cod]
-.venv/
+*$py.class
+
+# Virtual environments
 .env
+.venv
+env/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ML artifacts
 checkpoints/
-logs/
-data/raw/
-data/processed/
 lightning_logs/
 *.pth
-"""
+*.pt
 
-    def _get_cnn_model(self) -> str:
-        return '''"""CNN Model definition."""
+# Data
+data/processed/
+"""
+    
+    def _get_model(self) -> str:
+        return '''"""CNN Model definitions."""
 import torch
 import torch.nn as nn
 import torchvision.models as models
+from typing import Literal
 
-class SimpleCNN(nn.Module):
-    """Simple CNN wrapper around ResNet."""
+
+class ImageClassifier(nn.Module):
+    """Flexible image classifier using torchvision backbones."""
     
-    def __init__(self, num_classes: int = 10, pretrained: bool = True):
+    ARCHITECTURES = {
+        "resnet18": models.resnet18,
+        "resnet34": models.resnet34,
+        "resnet50": models.resnet50,
+        "efficientnet_b0": models.efficientnet_b0,
+        "mobilenet_v2": models.mobilenet_v2,
+    }
+    
+    def __init__(
+        self,
+        num_classes: int = 10,
+        architecture: str = "resnet18",
+        pretrained: bool = True,
+    ):
         super().__init__()
-        # Use simple ResNet18 for boilerplate
-        # In a real app, strict=False or weights=... would be used depending on version
-        weights = 'DEFAULT' if pretrained else None
-        self.backbone = models.resnet18(weights=weights)
         
-        # Replace last layer
-        in_features = self.backbone.fc.in_features
-        self.backbone.fc = nn.Linear(in_features, num_classes)
+        if architecture not in self.ARCHITECTURES:
+            raise ValueError(f"Unknown architecture: {architecture}")
         
-    def forward(self, x):
+        weights = "DEFAULT" if pretrained else None
+        self.backbone = self.ARCHITECTURES[architecture](weights=weights)
+        
+        self._replace_classifier(num_classes, architecture)
+    
+    def _replace_classifier(self, num_classes: int, architecture: str):
+        """Replace the final classification layer."""
+        if "resnet" in architecture:
+            in_features = self.backbone.fc.in_features
+            self.backbone.fc = nn.Linear(in_features, num_classes)
+        elif "efficientnet" in architecture:
+            in_features = self.backbone.classifier[1].in_features
+            self.backbone.classifier[1] = nn.Linear(in_features, num_classes)
+        elif "mobilenet" in architecture:
+            in_features = self.backbone.classifier[2].in_features
+            self.backbone.classifier[2] = nn.Linear(in_features, num_classes)
+    
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.backbone(x)
+    
+    def predict(self, x: torch.Tensor) -> torch.Tensor:
+        """Get class predictions."""
+        with torch.no_grad():
+            logits = self.forward(x)
+            return torch.argmax(logits, dim=1)
 '''
 
-    def _get_dataset(self) -> str:
-        return '''"""Dataset and DataModule."""
+    def _get_data(self) -> str:
+        return '''"""Data loading and augmentation."""
+from pathlib import Path
+from typing import Optional, Tuple
+
 import torch
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, random_split
 from torchvision import transforms, datasets
 import pytorch_lightning as pl
-from pathlib import Path
+
 
 class ImageDataModule(pl.LightningDataModule):
-    def __init__(self, data_dir: str = "data/raw", batch_size: int = 32):
+    """PyTorch Lightning DataModule for image classification."""
+    
+    def __init__(
+        self,
+        data_dir: str = "data/raw",
+        batch_size: int = 32,
+        num_workers: int = 4,
+        image_size: Tuple[int, int] = (224, 224),
+        val_split: float = 0.2,
+    ):
         super().__init__()
-        self.data_dir = data_dir
+        self.data_dir = Path(data_dir)
         self.batch_size = batch_size
+        self.num_workers = num_workers
+        self.image_size = image_size
+        self.val_split = val_split
+        
         self.transform = transforms.Compose([
-            transforms.Resize((224, 224)),
+            transforms.Resize(image_size),
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomRotation(10),
+            transforms.ColorJitter(brightness=0.2, contrast=0.2),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], 
-                               std=[0.229, 0.224, 0.225])
+            transforms.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225]
+            ),
         ])
-
-    def setup(self, stage=None):
-        # Assumes data/raw folder has subfolders for each class
-        # This is a placeholder - usually you'd split train/val
-        try:
-            self.train_dataset = datasets.ImageFolder(
-                root=self.data_dir, 
-                transform=self.transform
-            )
-        except Exception:
-            # Fallback for empty init
-            print("Warning: No data found in data/raw. Using fake data for demo.")
-            self.train_dataset = datasets.FakeData(
-                size=100, 
-                image_size=(3, 224, 224), 
-                num_classes=10, 
-                transform=self.transform
-            )
-
-    def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
-'''
-
-    def _get_trainer(self) -> str:
-        return '''"""PyTorch Lightning Module."""
-import pytorch_lightning as pl
-import torch
-import torch.nn.functional as F
-import torch.optim as optim
-from src.models.cnn import SimpleCNN
-
-class ClassificationTask(pl.LightningModule):
-    def __init__(self, num_classes=10, learning_rate=1e-3):
-        super().__init__()
-        self.save_hyperparameters()
-        self.model = SimpleCNN(num_classes=num_classes)
-
-    def forward(self, x):
-        return self.model(x)
-
-    def training_step(self, batch, batch_idx):
-        x, y = batch
-        logits = self(x)
-        loss = F.cross_entropy(logits, y)
-        self.log("train_loss", loss)
-        return loss
-
-    def configure_optimizers(self):
-        return optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
+        
+        self.val_transform = transforms.Compose([
+            transforms.Resize(image_size),
+            transforms.ToTensor(),
+            transforms.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225]
+            ),
+        ])
+    
+    def setup(self, stage: Optional[str] = None):
+        """Load and split the dataset."""
+        if not self.data_dir.exists():
+            raise FileNotFoundError(f"Data directory not found: {self.data_dir}")
+        
+        full_dataset = datasets.ImageFolder(
+            root=str(self.data_dir),
+            transform=self.transform
+        )
+        
+        self.classes = full_dataset.classes
+        self.num_classes = len(self.classes)
+        
+        val_size = int(len(full_dataset) * self.val_split)
+        train_size = len(full_dataset) - val_size
+        
+        self.train_dataset, self.val_dataset = random_split(
+            full_dataset,
+            [train_size, val_size],
+            generator=torch.Generator().manual_seed(42)
+        )
+        
+        self.val_dataset.dataset.transform = self.val_transform
+        
+        print(f"Loaded {len(full_dataset)} images across {self.num_classes} classes")
+        print(f"Classes: {self.classes}")
+        print(f"Train: {len(self.train_dataset)}, Val: {len(self.val_dataset)}")
+    
+    def train_dataloader(self) -> DataLoader:
+        return DataLoader(
+            self.train_dataset,
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=self.num_workers,
+            pin_memory=True,
+        )
+    
+    def val_dataloader(self) -> DataLoader:
+        return DataLoader(
+            self.val_dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            pin_memory=True,
+        )
 '''
 
     def _get_train_script(self) -> str:
         return '''"""Main training script."""
+from pathlib import Path
+
 import pytorch_lightning as pl
-from src.data.dataset import ImageDataModule
-from src.training.trainer import ClassificationTask
+import torch
+import torch.nn.functional as F
+import yaml
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
+from pytorch_lightning.loggers import TensorBoardLogger
+
+from src.model import ImageClassifier
+from src.data import ImageDataModule
+
+
+class ClassificationTask(pl.LightningModule):
+    """PyTorch Lightning module for image classification."""
+    
+    def __init__(
+        self,
+        num_classes: int = 10,
+        architecture: str = "resnet18",
+        learning_rate: float = 1e-3,
+        pretrained: bool = True,
+    ):
+        super().__init__()
+        self.save_hyperparameters()
+        
+        self.model = ImageClassifier(
+            num_classes=num_classes,
+            architecture=architecture,
+            pretrained=pretrained,
+        )
+    
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.model(x)
+    
+    def training_step(self, batch, batch_idx):
+        x, y = batch
+        logits = self(x)
+        loss = F.cross_entropy(logits, y)
+        
+        acc = (logits.argmax(dim=1) == y).float().mean()
+        
+        self.log("train_loss", loss, prog_bar=True)
+        self.log("train_acc", acc, prog_bar=True)
+        
+        return loss
+    
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        logits = self(x)
+        loss = F.cross_entropy(logits, y)
+        
+        acc = (logits.argmax(dim=1) == y).float().mean()
+        
+        self.log("val_loss", loss, prog_bar=True)
+        self.log("val_acc", acc, prog_bar=True)
+    
+    def configure_optimizers(self):
+        optimizer = torch.optim.AdamW(
+            self.parameters(),
+            lr=self.hparams.learning_rate,
+            weight_decay=0.01
+        )
+        
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer,
+            T_max=10
+        )
+        
+        return [optimizer], [scheduler]
+
+
+def load_config():
+    """Load configuration from mlcli.yaml."""
+    config_path = Path("mlcli.yaml")
+    if config_path.exists():
+        with open(config_path) as f:
+            return yaml.safe_load(f)
+    return {}
+
 
 def main():
-    # 1. Setup Data
-    dm = ImageDataModule(data_dir="data/raw", batch_size=32)
+    config = load_config()
     
-    # 2. Setup Model
-    model = ClassificationTask(num_classes=10)
+    model_config = config.get("model", {})
+    training_config = config.get("training", {})
     
-    # 3. Trainer
-    trainer = pl.Trainer(
-        max_epochs=5,
-        accelerator="auto",
-        default_root_dir="checkpoints"
+    dm = ImageDataModule(
+        data_dir="data/raw",
+        batch_size=training_config.get("batch_size", 32),
+    )
+    dm.setup()
+    
+    task = ClassificationTask(
+        num_classes=dm.num_classes,
+        architecture=model_config.get("architecture", "resnet18"),
+        learning_rate=training_config.get("learning_rate", 1e-3),
+        pretrained=model_config.get("pretrained", True),
     )
     
-    # 4. Train
-    trainer.fit(model, datamodule=dm)
+    checkpoint_callback = ModelCheckpoint(
+        dirpath="checkpoints",
+        filename="model-{epoch:02d}-{val_acc:.4f}",
+        monitor="val_acc",
+        mode="max",
+        save_top_k=3,
+    )
+    
+    early_stop = EarlyStopping(
+        monitor="val_loss",
+        patience=5,
+        mode="min",
+    )
+    
+    trainer = pl.Trainer(
+        max_epochs=training_config.get("epochs", 10),
+        accelerator=training_config.get("accelerator", "auto"),
+        callbacks=[checkpoint_callback, early_stop],
+        logger=TensorBoardLogger("lightning_logs", name="image_classifier"),
+    )
+    
+    trainer.fit(task, datamodule=dm)
+    
+    print(f"\\nBest model: {checkpoint_callback.best_model_path}")
+    print(f"Best validation accuracy: {checkpoint_callback.best_model_score:.4f}")
+
 
 if __name__ == "__main__":
     main()
-'''
-
-    def _get_notebook(self) -> str:
-        return '''{
- "cells": [
-  {
-   "cell_type": "markdown",
-   "source": ["# Data Visualization"]
-  },
-  {
-   "cell_type": "code",
-   "source": ["import matplotlib.pyplot as plt\\nimport torch\\nfrom torchvision.utils import make_grid"]
-  }
- ],
- "metadata": {
-  "kernelspec": {
-   "display_name": "Python 3",
-   "language": "python",
-   "name": "python3"
-  }
- },
- "nbformat": 4,
- "nbformat_minor": 4
-}
 '''
