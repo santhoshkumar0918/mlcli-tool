@@ -1,0 +1,153 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      
+      - name: Install linters
+        run: |
+          pip install black isort ruff mypy
+      
+      - name: Run Black
+        run: black --check mlcli/
+      
+      - name: Run isort
+        run: isort --check-only mlcli/
+      
+      - name: Run Ruff
+        run: ruff check mlcli/
+
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Test import
+        run: |
+          python -c "import mlcli; print(f'v{mlcli.__version__}')"
+          mlcli --help
+
+      - name: Test init command
+        run: |
+          mkdir -p /tmp/test-project
+          cd /tmp/test-project
+          mlcli init --name test-project
+          ls -la
+
+      - name: Test Meta-ML engine
+        run: |
+          python -c "
+          from mlcli.meta_ml import SuggestionEngine, KnowledgeBaseGenerator
+          
+          # Test knowledge base
+          generator = KnowledgeBaseGenerator(seed=42)
+          scenarios = generator.generate_knowledge_base(10)
+          print(f'Generated {len(scenarios)} scenarios')
+          
+          # Test engine
+          engine = SuggestionEngine()
+          suggestions = engine.predict(
+              data_profile={'n_samples': 100, 'n_features': 50},
+              evaluation_report={'metrics': {'accuracy': 0.65}}
+          )
+          print(f'Got {len(suggestions)} suggestions')
+          for s in suggestions[:3]:
+              print(f'  - {s[\"suggestion\"]}: {s[\"confidence\"]:.1%}')
+          "
+
+      - name: Test schemas
+        run: |
+          python -c "
+          from mlcli.core.schemas import DataProfileSchema, TrainingSummarySchema
+          
+          # Test data profile schema
+          profile = DataProfileSchema(
+              original_shape=[1000, 20],
+              n_samples=1000,
+              n_features=20
+          )
+          print(f'DataProfile: {profile.n_samples} samples')
+          
+          # Test training summary schema
+          training = TrainingSummarySchema(
+              task_type='classification',
+              best_score=0.92
+          )
+          print(f'TrainingSummary: score={training.best_score}')
+          "
+
+      - name: Test artifact tracker
+        run: |
+          python -c "
+          import tempfile
+          from pathlib import Path
+          from mlcli.core.versioning import ArtifactTracker, ArtifactType
+          
+          with tempfile.TemporaryDirectory() as tmpdir:
+              tracker = ArtifactTracker(Path(tmpdir))
+              print(f'Tracker initialized in {tmpdir}')
+              print(f'Stats: {tracker.get_stats()}')
+          "
+
+      - name: Test telemetry
+        run: |
+          python -c "
+          import tempfile
+          from pathlib import Path
+          from mlcli.core.telemetry import TelemetryCollector
+          
+          with tempfile.TemporaryDirectory() as tmpdir:
+              telemetry = TelemetryCollector(Path(tmpdir))
+              telemetry.log_command('test', {'param': 'value'})
+              print(f'Telemetry session: {telemetry.session_id}')
+              print(f'Stats: {telemetry.get_stats()}')
+          "
+
+  build-test:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install build tools
+        run: |
+          pip install build twine
+
+      - name: Build package
+        run: python -m build
+
+      - name: Check package
+        run: twine check dist/*
