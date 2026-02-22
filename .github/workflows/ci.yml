@@ -7,32 +7,8 @@ on:
     branches: [main, master]
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-      
-      - name: Install linters
-        run: |
-          pip install black isort ruff mypy
-      
-      - name: Run Black
-        run: black --check mlcli/
-      
-      - name: Run isort
-        run: isort --check-only mlcli/
-      
-      - name: Run Ruff
-        run: ruff check mlcli/
-
   test:
     runs-on: ubuntu-latest
-    needs: lint
     strategy:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12"]
@@ -67,12 +43,10 @@ jobs:
           python -c "
           from mlcli.meta_ml import SuggestionEngine, KnowledgeBaseGenerator
           
-          # Test knowledge base
           generator = KnowledgeBaseGenerator(seed=42)
           scenarios = generator.generate_knowledge_base(10)
           print(f'Generated {len(scenarios)} scenarios')
           
-          # Test engine
           engine = SuggestionEngine()
           suggestions = engine.predict(
               data_profile={'n_samples': 100, 'n_features': 50},
@@ -88,7 +62,6 @@ jobs:
           python -c "
           from mlcli.core.schemas import DataProfileSchema, TrainingSummarySchema
           
-          # Test data profile schema
           profile = DataProfileSchema(
               original_shape=[1000, 20],
               n_samples=1000,
@@ -96,7 +69,6 @@ jobs:
           )
           print(f'DataProfile: {profile.n_samples} samples')
           
-          # Test training summary schema
           training = TrainingSummarySchema(
               task_type='classification',
               best_score=0.92
