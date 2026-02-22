@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, field_serializer
 
 from .base import VersionedArtifact
 
@@ -11,10 +11,10 @@ from .base import VersionedArtifact
 class TargetInfo(BaseModel):
     """Information about the target variable."""
     
-    name: str = Field(description="Target column name")
-    dtype: str = Field(description="Data type of target")
-    unique_values: int = Field(ge=0, description="Number of unique values")
-    missing_values: int = Field(ge=0, description="Number of missing values")
+    name: str = Field(default="", description="Target column name")
+    dtype: str = Field(default="unknown", description="Data type of target")
+    unique_values: int = Field(default=0, ge=0, description="Number of unique values")
+    missing_values: int = Field(default=0, ge=0, description="Number of missing values")
     task_type: Optional[str] = Field(default=None, description="classification or regression")
     label_mapping: Optional[Dict[str, int]] = Field(default=None, description="Label to index mapping")
     value_counts: Optional[Dict[str, int]] = Field(default=None, description="Value counts for classification")
@@ -40,8 +40,15 @@ class DataProfileSchema(VersionedArtifact):
     Contains comprehensive data analysis and preprocessing metadata.
     """
     
-    original_shape: tuple[int, int] = Field(description="Original data dimensions (rows, cols)")
+    original_shape: tuple[int, int] = Field(default=(0, 0), description="Original data dimensions (rows, cols)")
     processed_shape: Optional[tuple[int, int]] = Field(default=None, description="Processed data dimensions")
+    
+    @field_validator('original_shape', 'processed_shape', mode='before')
+    @classmethod
+    def convert_list_to_tuple(cls, v):
+        if isinstance(v, list):
+            return tuple(v)
+        return v
     
     numeric_columns: List[str] = Field(default_factory=list, description="Numeric feature names")
     categorical_columns: List[str] = Field(default_factory=list, description="Categorical feature names")

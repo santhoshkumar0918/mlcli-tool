@@ -36,7 +36,7 @@ class TrainingSummarySchema(VersionedArtifact):
     Contains model training results and configuration.
     """
     
-    task_type: str = Field(description="classification or regression")
+    task_type: str = Field(default="classification", description="classification or regression")
     best_model_name: Optional[str] = Field(default=None, description="Name of the best performing model")
     best_score: Optional[float] = Field(default=None, ge=0.0, description="Best cross-validation score")
     

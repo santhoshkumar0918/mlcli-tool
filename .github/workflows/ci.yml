@@ -50,7 +50,7 @@ jobs:
           
           engine = SuggestionEngine()
           suggestions = engine.predict(
-              data_profile={'n_samples': 100, 'n_features': 50},
+              data_profile={'original_shape': [100, 50]},
               evaluation_report={'metrics': {'accuracy': 0.65}}
           )
           print(f'Got {len(suggestions)} suggestions')
@@ -64,11 +64,9 @@ jobs:
           from mlcli.core.schemas import DataProfileSchema, TrainingSummarySchema
           
           profile = DataProfileSchema(
-              original_shape=[1000, 20],
-              n_samples=1000,
-              n_features=20
+              original_shape=[1000, 20]
           )
-          print(f'DataProfile: {profile.n_samples} samples')
+          print(f'DataProfile: {profile.n_samples} samples, {profile.n_features} features')
           
           training = TrainingSummarySchema(
               task_type='classification',
