@@ -35,8 +35,9 @@ jobs:
         run: |
           mkdir -p /tmp/test-project
           cd /tmp/test-project
-          mlcli init --name test-project
+          mlcli --project-dir . init --name test-project --description "CI test project"
           ls -la
+          cat mlcli.yaml
 
       - name: Test Meta-ML engine
         run: |
@@ -81,7 +82,7 @@ jobs:
           python -c "
           import tempfile
           from pathlib import Path
-          from mlcli.core.versioning import ArtifactTracker, ArtifactType
+          from mlcli.core.versioning import ArtifactTracker
           
           with tempfile.TemporaryDirectory() as tmpdir:
               tracker = ArtifactTracker(Path(tmpdir))

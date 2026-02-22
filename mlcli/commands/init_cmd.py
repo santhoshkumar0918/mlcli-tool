@@ -1,5 +1,6 @@
 """Initialize command for ML Assistant CLI."""
 
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -17,6 +18,11 @@ console = Console()
 app = typer.Typer()
 
 
+def is_interactive() -> bool:
+    """Check if running in interactive mode."""
+    return sys.stdin.isatty()
+
+
 @app.callback(invoke_without_command=True)
 def main(
     ctx: typer.Context,
@@ -31,8 +37,12 @@ def main(
     config_file = project_dir / "mlcli.yaml"
     
     if config_file.exists() and not force:
-        if not Confirm.ask(f"Project configuration already exists at {config_file}. Overwrite?"):
-            console.print("[yellow]Initialization cancelled.[/yellow]")
+        if is_interactive():
+            if not Confirm.ask(f"Project configuration already exists at {config_file}. Overwrite?"):
+                console.print("[yellow]Initialization cancelled.[/yellow]")
+                raise typer.Exit(0)
+        else:
+            console.print("[yellow]Configuration exists, use --force to overwrite[/yellow]")
             raise typer.Exit(0)
     
     from mlcli.plugins.registry import PluginRegistry
@@ -49,21 +59,23 @@ def main(
             console.print(f"[yellow]Available plugins:[/yellow] {', '.join(available)}")
         raise typer.Exit(1)
     
-    if not name:
-        name = Prompt.ask(
+    project_name = name or project_dir.name
+    
+    if not name and is_interactive():
+        project_name = Prompt.ask(
             "Project name", 
             default=project_dir.name,
             show_default=True
         )
     
-    project_name = name or project_dir.name
-    
-    if not description:
+    if not description and is_interactive():
         description = Prompt.ask(
             "Project description (optional)", 
             default="",
             show_default=False
         )
+    else:
+        description = description or ""
     
     try:
         selected_plugin.create_project(project_dir, project_name)
@@ -78,7 +90,7 @@ def main(
         config = MLCLIConfig(**config_dict)
         save_config(config, config_file)
         
-        console.print(f"[green]✓[/green] Initialized [bold]{plugin}[/bold] project: [bold]{name}[/bold]")
+        console.print(f"[green]✓[/green] Initialized [bold]{plugin}[/bold] project: [bold]{project_name}[/bold]")
         console.print(f"[green]✓[/green] Configuration saved to: {config_file}")
         console.print(f"[green]✓[/green] Project structure created in: {project_dir}")
         
