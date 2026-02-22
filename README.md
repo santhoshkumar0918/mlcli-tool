@@ -1,219 +1,242 @@
-# ML Assistant CLI
+# MLCLI
 
-**From dataset to deployed API in minutes**
+<div align="center">
 
-ML Assistant CLI is a developer-first command-line tool that unifies the entire ML lifecycle - from data preprocessing to cloud deployment - with AI-guided suggestions and one-click deployments.
+**The ML Framework for Production**
 
-## Features
+[![PyPI version](https://badge.fury.io/py/ml-assistant-cli.svg)](https://badge.fury.io/py/ml-assistant-cli)
+[![Python](https://img.shields.io/pypi/pyversions/ml-assistant-cli.svg)](https://pypi.org/project/ml-assistant-cli/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-- **End-to-end ML workflow** in a single CLI
-- **AI-powered suggestions** using Meta-ML recommendation engine
-- **Artifact tracking** with lineage and integrity verification
-- **Privacy-first telemetry** for continuous improvement
-- **BentoML integration** for reproducible model packaging
-- **Multi-cloud deployment** (BentoCloud, Azure ML, AWS SageMaker)
-- **Production-ready** with monitoring, rollbacks, and traffic management
-- **Beginner-friendly** with sensible defaults and clear guidance
+[Documentation](https://mlcli.readthedocs.io) | [Quick Start](#quick-start) | [Examples](#examples) | [Contributing](CONTRIBUTING.md)
+
+</div>
+
+---
+
+## Overview
+
+MLCLI is a production-grade ML framework that automates the entire machine learning lifecycle. From raw data to deployed API in minutes, not weeks.
+
+| Feature | MLCLI | Traditional |
+|---------|-------|-------------|
+| Time to production | Minutes | Weeks |
+| ML expertise required | Minimal | Advanced |
+| Deployment ready | Yes | Manual setup |
+| AI suggestions | Built-in | None |
+| Artifact tracking | Automatic | Manual |
+
+---
 
 ## Quick Start
 
-### Installation
+### Install
 
 ```bash
-# Install from PyPI
 pip install ml-assistant-cli
-
-# Or with cloud support
-pip install ml-assistant-cli[cloud]
-
-# Verify installation
-mlcli --help
 ```
 
-### Initialize a new ML project
+### Initialize
 
 ```bash
-mlcli init --name my-ml-project
-cd my-ml-project
+mlcli init my-project
+cd my-project
 ```
 
-### Process your data
+### Train & Deploy
 
 ```bash
-# Add your dataset to data/raw/
-mlcli preprocess --input data/raw/your_data.csv --target target_column
-```
-
-### Train models
-
-```bash
+# Add your data to data/raw/
+mlcli preprocess --input data/raw/data.csv --target label
 mlcli train
-```
-
-### Evaluate and get AI suggestions
-
-```bash
 mlcli evaluate
-mlcli suggest              # ML-powered suggestions
-mlcli suggest --rules      # Rule-based fallback
-mlcli suggest --top-k 10   # Show top 10 suggestions
+mlcli suggest
+mlcli predict --input new_data.csv
 ```
 
-### Make predictions
+---
+
+## Features
+
+### AI-Powered Suggestions
+
+MLCLI analyzes your data and models, providing actionable recommendations:
 
 ```bash
-mlcli predict --input new_data.csv --output predictions.csv
+$ mlcli suggest
+
+1. HYPERPARAMETER_TUNING (78% confidence)
+   Issue: Sub-optimal model configuration detected
+   Action: Enable hyperparameter_tuning in mlcli.yaml
+
+2. SMOTE_IMBALANCE (72% confidence)
+   Issue: Class imbalance ratio of 8.5:1 detected
+   Action: Set imbalance_strategy: smote in mlcli.yaml
 ```
 
-### Deploy to cloud
+### Plugin System
+
+| Plugin | Use Case | Framework |
+|--------|----------|-----------|
+| `tabular` | Structured data | scikit-learn, XGBoost |
+| `chatbot` | RAG applications | LangChain, OpenAI |
+| `image-classification` | Computer vision | PyTorch, Lightning |
 
 ```bash
-mlcli package
-mlcli deploy --provider bentocloud
-mlcli monitor
+mlcli init --plugin chatbot my-chatbot
+mlcli init --plugin image-classification my-cv-project
 ```
 
-## AI-Powered Suggestions
+### Artifact Tracking
 
-The `mlcli suggest` command uses a Meta-ML recommendation engine trained on expert ML heuristics:
-
-- **19 suggestion types** covering data quality, model performance, and deployment
-- **Confidence scores** with visualization
-- **Actionable recommendations** with specific commands
-- **Graceful fallback** to rule-based suggestions
-
-### Suggestion Types
-
-| Category | Suggestions |
-|----------|-------------|
-| Data | COLLECT_MORE_DATA, FEATURE_ENGINEERING, FEATURE_SELECTION, DIMENSIONALITY_REDUCTION |
-| Imbalance | SMOTE_IMBALANCE, CLASS_WEIGHTS, STRATIFIED_SAMPLING |
-| Performance | HYPERPARAMETER_TUNING, TRY_ENSEMBLE_MODELS, REGULARIZATION |
-| Quality | HANDLE_MISSING_VALUES, OUTLIER_TREATMENT, DATA_AUGMENTATION |
-| Training | CROSS_VALIDATION, EARLY_STOPPING, LEARNING_RATE_TUNING |
-
-### Train the Suggestion Model
-
-```bash
-# Generate training data and train model
-python -m mlcli.meta_ml.training --n-samples 10000
-```
-
-## Project Structure
+Every artifact is tracked with lineage and integrity:
 
 ```
-my-ml-project/
-├── data/
-│   └── raw/           # Your datasets
-├── models/            # Trained models
-├── reports/           # Evaluation reports
-├── .mlcli/            # MLCLI metadata
-│   ├── artifact_registry.json    # Artifact tracking
-│   └── telemetry/               # Event logs
-├── mlcli.yaml         # Configuration
-└── README.md
+.mlcli/
+├── artifact_registry.json    # Full audit trail
+└── telemetry/                # Usage analytics
 ```
+
+---
 
 ## Configuration
 
-Customize your ML pipeline in `mlcli.yaml`:
+Simple YAML configuration:
 
 ```yaml
-project_name: my-ml-project
-description: My awesome ML project
+# mlcli.yaml
+project_name: my-project
 
 data:
-  target_column: target
+  target_column: label
   test_size: 0.2
-  missing_value_strategy: auto
-  scaling_strategy: standard
-  imbalance_strategy: auto  # smote, class_weights, none
 
 model:
-  algorithms: [logistic_regression, random_forest, xgboost]
+  algorithms: [xgboost, random_forest]
   hyperparameter_tuning: true
   cv_folds: 5
-  class_weight: balanced
 
 deployment:
   provider: bentocloud
-  scaling_min: 1
-  scaling_max: 3
   instance_type: cpu.2
 ```
 
-## Artifact Tracking
+---
 
-MLCLI tracks all generated artifacts with unique IDs, checksums, and lineage:
+## Examples
 
-```python
-from mlcli.core.versioning import ArtifactTracker, ArtifactType
+### Tabular Classification
 
-tracker = ArtifactTracker(project_dir)
+```bash
+mlcli init --plugin tabular classifier
+cd classifier
 
-# Register artifacts
-profile_id = tracker.register(
-    artifact_type=ArtifactType.DATA_PROFILE,
-    file_path="data/processed/data_profile.json",
-    metadata={"n_samples": 1000}
-)
-
-# Get lineage
-lineage = tracker.get_lineage(model_id)
+cp ~/data.csv data/raw/
+mlcli preprocess --input data/raw/data.csv --target label
+mlcli train
+mlcli evaluate
+mlcli suggest
 ```
 
-## Roadmap
+### RAG Chatbot
 
-### Phase 1: Local MVP
+```bash
+mlcli init --plugin chatbot assistant
+cd assistant
 
-- [x] Project initialization
-- [x] Data preprocessing and analysis
-- [x] Model training with hyperparameter optimization
-- [x] Model evaluation and metrics
-- [x] AI-guided suggestions
-- [x] Batch predictions
-- [ ] BentoML packaging
+cp ~/docs/* data/knowledge_base/
+echo "OPENAI_API_KEY=sk-..." > .env
+python src/app.py
+```
 
-### Phase 2: Cloud MVP
+### Image Classification
 
-- [ ] BentoCloud deployment
-- [ ] Model monitoring
-- [ ] Deployment rollbacks
+```bash
+mlcli init --plugin image-classification classifier
+cd classifier
 
-### Phase 3: Multi-Cloud
+# data/raw/class1/*.jpg
+# data/raw/class2/*.jpg
+python train.py
+```
 
-- [ ] Azure ML integration
-- [ ] AWS SageMaker support
-- [ ] Advanced deployment strategies
-- [ ] CI/CD integration
+---
 
 ## Architecture
 
 ```
 mlcli/
-├── commands/          # CLI commands
 ├── core/
-│   ├── config.py      # Configuration management
-│   ├── data.py        # Data processing
-│   ├── models.py      # Model training
-│   ├── schemas/       # Pydantic validation schemas
-│   ├── versioning/    # Artifact tracking
-│   ├── telemetry/     # Privacy-first telemetry
-│   └── suggestion_model/  # ML suggestion engine
-├── meta_ml/           # Meta-ML recommendation engine
-└── plugins/           # Plugin system (tabular, chatbot, image)
+│   ├── schemas/        # Pydantic validation
+│   ├── versioning/     # Artifact tracking
+│   ├── telemetry/      # Usage analytics
+│   └── suggestion_model/   # Meta-ML engine
+├── meta_ml/            # Recommendation system
+├── plugins/            # Extensible plugins
+└── commands/           # CLI commands
 ```
+
+---
+
+## API Reference
+
+| Command | Description |
+|---------|-------------|
+| `mlcli init` | Initialize new project |
+| `mlcli preprocess` | Process and validate data |
+| `mlcli train` | Train ML models |
+| `mlcli evaluate` | Evaluate model performance |
+| `mlcli suggest` | Get AI-powered suggestions |
+| `mlcli predict` | Make predictions |
+| `mlcli package` | Package for deployment |
+| `mlcli deploy` | Deploy to cloud |
+
+---
+
+## Roadmap
+
+### v0.2.0 (Current)
+- [x] AI-powered suggestions
+- [x] Artifact tracking
+- [x] Telemetry collection
+- [x] Plugin system
+
+### v0.3.0
+- [ ] BentoML packaging
+- [ ] Cloud deployment
+- [ ] Model monitoring
+
+### v0.4.0
+- [ ] Azure ML integration
+- [ ] AWS SageMaker integration
+- [ ] Auto-scaling
+
+---
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+```bash
+git clone https://github.com/mlcli/mlcli.git
+cd mlcli
+pip install -e ".[dev]"
+pytest
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+---
 
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-## Support
+---
 
-- Documentation: https://mlcli.readthedocs.io
-- Issue Tracker: https://github.com/mlcli/mlcli/issues
-- Discussions: https://github.com/mlcli/mlcli/discussions
+<div align="center">
+
+**Built for ML Engineers, by ML Engineers**
+
+[GitHub](https://github.com/mlcli/mlcli) | [PyPI](https://pypi.org/project/ml-assistant-cli/) | [Documentation](https://mlcli.readthedocs.io)
+
+</div>
