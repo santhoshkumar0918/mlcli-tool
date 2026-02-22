@@ -55,6 +55,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+myenv/
 
 # IDE
 .vscode/
@@ -72,17 +73,33 @@ venv.bak/
 ehthumbs.db
 Thumbs.db
 
-# ML specific
+# ML specific - model artifacts
 *.pkl
 *.joblib
 *.h5
 *.hdf5
-models/checkpoints/
-logs/*.log
+*.onnx
+*.pt
+*.pth
 
-# Test directories
+# Generated project folders - DO NOT COMMIT
+data/
+logs/
+models/
+notebooks/
+reports/
+src/
+tests/
+deployments/
+predictions/
+
+# Test projects - DO NOT COMMIT
 test-*/
 test_*/
+my-ml-project/
+my_chatbot/
+my_*/
+*_project/
 
 # BentoML
 bentofile.yaml
@@ -91,6 +108,12 @@ bentos/
 # Temporary files
 *.tmp
 *.temp
+*.log
 
-# Local chatbot project
-my_chatbot/
+# Local config files
+mlcli.yaml
+
+# Binary files
+*.bin
+*.parquet
+*.pickle
