@@ -1,0 +1,19 @@
+project_name: my-demo
+version: 0.1.0
+description: Demo ML project
+plugin: tabular
+data:
+  target_column: churn
+  test_size: 0.2
+  random_state: 42
+model:
+  algorithms:
+  - logistic_regression
+  - random_forest
+  - xgboost
+  hyperparameter_tuning: true
+  cv_folds: 5
+preprocessing:
+  missing_value_strategy: auto
+  scaling_strategy: standard
+  encoding_strategy: auto
