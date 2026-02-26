@@ -12,18 +12,23 @@ class ChatbotPlugin(PluginBase):
     """Plugin for chatbot/RAG projects using LangChain."""
     
     name = "chatbot"
-    description = "LangChain-based chatbot with RAG (Retrieval-Augmented Generation)"
+    description = "LangChain-based chatbot with RAG + Intent Classification (mlcli workflow supported)"
     dependencies = ["langchain", "openai", "faiss-cpu"]
     
     def get_directory_structure(self) -> List[str]:
-        """Return minimal directory structure for chatbot projects."""
+        """Return directory structure for chatbot projects."""
         return [
+            "data/raw",
+            "data/processed",
             "data/knowledge_base",
+            "models",
+            "reports/figures",
+            "notebooks",
             "src",
         ]
     
     def get_boilerplate_files(self) -> Dict[str, str]:
-        """Return essential boilerplate files for chatbot projects."""
+        """Return boilerplate files for chatbot projects."""
         return {
             "README.md": self._get_readme(),
             ".gitignore": self._get_gitignore(),
@@ -31,7 +36,10 @@ class ChatbotPlugin(PluginBase):
             "requirements.txt": self.get_requirements(),
             "src/app.py": self._get_app(),
             "src/rag.py": self._get_rag(),
+            "src/intent_classifier.py": self._get_intent_classifier(),
             "data/knowledge_base/sample.txt": self._get_sample_data(),
+            "data/raw/intents.csv": self._get_sample_intents_csv(),
+            "generate_demo_data.py": self._get_data_generator(),
         }
     
     def get_requirements(self) -> str:
@@ -60,13 +68,23 @@ rich>=13.0.0
         """Return plugin-specific config."""
         return {
             "plugin": "chatbot",
+            "data": {
+                "target_column": "intent",
+                "test_size": 0.2,
+                "random_state": 42,
+            },
+            "model": {
+                "task": "classification",
+                "algorithms": ["logistic_regression", "random_forest", "xgboost"],
+                "cv_folds": 5,
+            },
             "chatbot": {
                 "vector_store": "faiss",
                 "embedding_model": "text-embedding-ada-002",
                 "llm_model": "gpt-3.5-turbo",
                 "chunk_size": 1000,
                 "chunk_overlap": 200,
-            }
+            },
         }
     
     def _get_readme(self) -> str:
@@ -354,3 +372,178 @@ Example questions you can ask:
 - "Summarize the key points"
 - "What are the main recommendations?"
 """
+
+    def _get_sample_intents_csv(self) -> str:
+        return """text,word_count,has_question_mark,has_greeting,has_price_word,has_help_word,has_order_word,has_cancel_word,intent
+hello there,2,0,1,0,0,0,0,greeting
+hi how are you,4,0,1,0,0,0,0,greeting
+good morning,2,0,1,0,0,0,0,greeting
+hey,1,0,1,0,0,0,0,greeting
+what is the price,4,1,0,1,0,0,0,pricing
+how much does it cost,5,1,0,1,0,0,0,pricing
+what are your charges,4,1,0,1,0,0,0,pricing
+tell me the cost,4,0,0,1,0,0,0,pricing
+i need help,3,0,0,0,1,0,0,support
+can you help me,4,1,0,0,1,0,0,support
+i have a problem,4,0,0,0,1,0,0,support
+please assist me,3,0,0,0,1,0,0,support
+track my order,3,0,0,0,0,1,0,order_status
+where is my package,4,1,0,0,0,1,0,order_status
+order status please,3,0,0,0,0,1,0,order_status
+when will it arrive,4,1,0,0,0,1,0,order_status
+cancel my order,3,0,0,0,0,0,1,cancel
+i want to cancel,4,0,0,0,0,0,1,cancel
+stop my subscription,3,0,0,0,0,0,1,cancel
+refund please,2,0,0,0,0,0,1,cancel
+bye,1,0,0,0,0,0,0,farewell
+goodbye,1,0,0,0,0,0,0,farewell
+see you later,3,0,0,0,0,0,0,farewell
+thanks goodbye,2,0,0,0,0,0,0,farewell
+offer available,2,0,0,1,0,0,0,pricing
+how do i get started,5,1,0,0,1,0,0,support
+need assistance,2,0,0,0,1,0,0,support
+where is my order,4,1,0,0,0,1,0,order_status
+cancel subscription,2,0,0,0,0,0,1,cancel
+hello good morning,3,0,1,0,0,0,0,greeting
+"""
+
+    def _get_data_generator(self) -> str:
+        return '''"""Generate a larger intent classification dataset for training.
+
+Usage:
+    python generate_demo_data.py
+
+Output:
+    data/raw/intents.csv  (300 rows)
+"""
+import random
+import os
+
+random.seed(42)
+os.makedirs("data/raw", exist_ok=True)
+
+greetings = ["hello","hi","hey","good morning","good evening","howdy","what\'s up","greetings"]
+pricing = ["what is the price","how much does it cost","show me pricing","any offers","what are the charges"]
+support = ["i need help","can you assist","i have an issue","something is broken","not working"]
+order = ["track my order","where is my package","order status","delivery update","when will it arrive"]
+cancel = ["cancel my order","i want a refund","stop subscription","cancel account","refund please"]
+farewell = ["bye","goodbye","see you","take care","talk later","good night"]
+
+label_map = {
+    "greeting": greetings,
+    "pricing": pricing,
+    "support": support,
+    "order_status": order,
+    "cancel": cancel,
+    "farewell": farewell,
+}
+
+rows = ["text,word_count,has_question_mark,has_greeting,has_price_word,has_help_word,has_order_word,has_cancel_word,intent"]
+price_words = ["price","cost","charge","fee","offer"]
+help_words = ["help","assist","issue","problem","broken"]
+order_words = ["order","package","delivery","arrive","track"]
+cancel_words = ["cancel","refund","stop","subscription"]
+greet_words = ["hello","hi","hey","morning","evening","howdy"]
+
+for intent, templates in label_map.items():
+    for _ in range(50):
+        text = random.choice(templates)
+        wc = len(text.split())
+        hq = 1 if "?" in text else 0
+        hg = 1 if any(w in text for w in greet_words) else 0
+        hp = 1 if any(w in text for w in price_words) else 0
+        hh = 1 if any(w in text for w in help_words) else 0
+        ho = 1 if any(w in text for w in order_words) else 0
+        hc = 1 if any(w in text for w in cancel_words) else 0
+        rows.append(f"{text},{wc},{hq},{hg},{hp},{hh},{ho},{hc},{intent}")
+
+with open("data/raw/intents.csv", "w") as f:
+    f.write("\n".join(rows))
+
+print(f"Created data/raw/intents.csv ({len(rows)-1} rows)")
+print("Target: intent (greeting, pricing, support, order_status, cancel, farewell)")
+print()
+print("Next steps:")
+print("  mlcli preprocess -i data/raw/intents.csv -t intent -o data/processed")
+print("  mlcli train -t data/processed/train.csv --test-data data/processed/test.csv --target intent -o models")
+'''
+
+    def _get_intent_classifier(self) -> str:
+        return '''"""Use the trained mlcli model for intent classification in the chatbot."""
+import joblib
+from pathlib import Path
+
+
+def load_intent_model(model_path: str = "models/best_model.pkl"):
+    """Load the trained intent classifier."""
+    path = Path(model_path)
+    if not path.exists():
+        print(f"[Warning] Intent model not found at {model_path}")
+        print("Run: mlcli train -t data/processed/train.csv --target intent -o models")
+        return None
+    return joblib.load(path)
+
+
+def load_pipeline(pipeline_path: str = "data/processed/preprocessing_pipeline.pkl"):
+    """Load the preprocessing pipeline."""
+    path = Path(pipeline_path)
+    if not path.exists():
+        return None
+    return joblib.load(path)
+
+
+def predict_intent(text: str, model=None, pipeline=None) -> str:
+    """Predict the intent of a user message.
+    
+    Args:
+        text: Raw user message
+        model: Loaded sklearn model (from mlcli train)
+        pipeline: Loaded preprocessing pipeline (from mlcli preprocess)
+    
+    Returns:
+        Predicted intent label (e.g. \'greeting\', \'pricing\', \'support\')
+    """
+    if model is None or pipeline is None:
+        return "unknown"
+
+    import pandas as pd
+    price_words = ["price","cost","charge","fee","offer"]
+    help_words  = ["help","assist","issue","problem","broken"]
+    order_words = ["order","package","delivery","arrive","track"]
+    cancel_words= ["cancel","refund","stop","subscription"]
+    greet_words = ["hello","hi","hey","morning","evening","howdy"]
+
+    words = text.lower().split()
+    features = pd.DataFrame([{
+        "word_count":         len(words),
+        "has_question_mark":  1 if "?" in text else 0,
+        "has_greeting":       1 if any(w in words for w in greet_words) else 0,
+        "has_price_word":     1 if any(w in words for w in price_words) else 0,
+        "has_help_word":      1 if any(w in words for w in help_words) else 0,
+        "has_order_word":     1 if any(w in words for w in order_words) else 0,
+        "has_cancel_word":    1 if any(w in words for w in cancel_words) else 0,
+    }])
+
+    preprocessor = pipeline.get("preprocessor")
+    if preprocessor:
+        features = preprocessor.transform(features)
+
+    return model.predict(features)[0]
+
+
+if __name__ == "__main__":
+    model    = load_intent_model()
+    pipeline = load_pipeline()
+
+    test_msgs = [
+        "hello there",
+        "what is the price?",
+        "i need help",
+        "track my order",
+        "cancel my subscription",
+        "goodbye",
+    ]
+    for msg in test_msgs:
+        intent = predict_intent(msg, model, pipeline)
+        print(f"  {msg!r:40s} → {intent}")
+'''

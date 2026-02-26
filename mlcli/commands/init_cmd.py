@@ -34,6 +34,13 @@ def main(
     """Initialize a new ML project with configuration and directory structure."""
     
     project_dir = ctx.obj["project_dir"]
+
+    # If a name is explicitly provided, create the project inside a subfolder
+    # named after the project (e.g. mlcli init --name my-project → ./my-project/)
+    if name:
+        project_dir = project_dir / name
+        project_dir.mkdir(parents=True, exist_ok=True)
+
     config_file = project_dir / "mlcli.yaml"
     
     if config_file.exists() and not force:
