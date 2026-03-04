@@ -1,0 +1,7 @@
+age,income,education,employed,target
+25,50000,Bachelors,yes,1
+45,80000,Masters,no,0
+35,60000,Bachelors,yes,1
+29,48000,HS,no,0
+52,120000,PhD,yes,1
+41,72000,Masters,yes,0

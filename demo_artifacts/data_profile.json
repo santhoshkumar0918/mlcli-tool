@@ -1,0 +1,38 @@
+{
+  "original_shape": [
+    6,
+    5
+  ],
+  "processed_shape": [
+    6,
+    6
+  ],
+  "numeric_columns": [
+    "age",
+    "income"
+  ],
+  "categorical_columns": [
+    "education",
+    "employed"
+  ],
+  "feature_names": [
+    "age",
+    "income",
+    "education_HS",
+    "education_Masters",
+    "education_PhD",
+    "employed_yes"
+  ],
+  "target_info": {
+    "name": "target",
+    "dtype": "int64",
+    "unique_values": 2,
+    "missing_values": "0",
+    "task_type": "classification"
+  },
+  "preprocessing_steps": [
+    "Missing value imputation: auto",
+    "Feature scaling: standard",
+    "Categorical encoding: auto"
+  ]
+}

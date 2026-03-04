@@ -1,4 +1,4 @@
-#!/bin/bash
+mlcli init --name my-demo --description "Demo ML project" --plugin tabular#!/bin/bash
 set -e
 
 # Setup

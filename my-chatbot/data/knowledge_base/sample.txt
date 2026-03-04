@@ -1,0 +1,19 @@
+This is sample knowledge base content.
+
+Add your documents here for the RAG system to learn from.
+
+Supported formats:
+- .txt files (plain text)
+- .pdf files (requires pypdf package)
+- .md files (markdown)
+
+The system will automatically:
+1. Load all documents from this directory
+2. Split them into chunks
+3. Create embeddings
+4. Build a vector index for fast retrieval
+
+Example questions you can ask:
+- "What is this document about?"
+- "Summarize the key points"
+- "What are the main recommendations?"
