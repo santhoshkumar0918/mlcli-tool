@@ -1,0 +1,22 @@
+{
+    "Metric": [
+        "Inference Latency (Mean)",
+        "Inference Latency (Std-Dev)",
+        "Ensemble Size (Estimators)",
+        "Total Structural Nodes",
+        "Peak Memory Consumption",
+        "Knowledge Base Samples",
+        "Feature Vector Dim",
+        "Framework Overhead"
+    ],
+    "Value": [
+        "62.9085 ms",
+        "6.0883 ms",
+        "100",
+        "13742",
+        "190.43 MB",
+        "120",
+        "7",
+        "1486.82 KB"
+    ]
+}
